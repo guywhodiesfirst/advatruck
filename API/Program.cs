@@ -1,3 +1,4 @@
+using API.Extensions;
 using Data;
 using Serilog;
 using Microsoft.EntityFrameworkCore;
@@ -30,6 +31,8 @@ try
     {
         var dbContext = scope.ServiceProvider.GetRequiredService<TmsDataContext>();
         await dbContext.Database.MigrateAsync();
+        
+        dbContext.SeedData();
     }
     
     app.UseHttpsRedirection();
