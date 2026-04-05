@@ -1,0 +1,14 @@
+.env
+.env.*
+
+.idea/
+.vscode/
+
+**/bin/
+**/obj/
+
+*.user
+*.suo
+*.log
+*.tmp
+*.iml

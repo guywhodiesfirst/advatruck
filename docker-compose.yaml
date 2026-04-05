@@ -1,0 +1,19 @@
+﻿services:
+  tms-db:
+    image: postgres:16
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+      POSTGRES_DB: tms_db
+    ports:
+      - "5432:5432"
+      
+  ### Uncomment when tms-bot is ready to be exposed to the internet for testing with ngrok
+  # ngrok:
+  #   image: ngrok/ngrok:latest
+  #   command: http localdev.docker:5053
+  #   environment:
+  #     NGROK_AUTHTOKEN: ${NGROK_AUTHTOKEN}
+  #   ports:
+  #     - "4040:4040"
