@@ -18,7 +18,7 @@ public class Driver
     [MaxLength(254)]
     public string Email { get; set; } = null!;
     [MaxLength(500)]
-    public string Note { get; set; } = null!;
+    public string? Note { get; set; }
     public DateTime RegistrationDate { get; set; }
     //public Vehicle Vehicle { get; set; } = null!;
     public ICollection<DriverLocation> DriverLocations { get; set; } = null!;
