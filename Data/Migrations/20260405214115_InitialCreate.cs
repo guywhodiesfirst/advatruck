@@ -32,14 +32,14 @@ namespace Data.Migrations
                 name: "DriverLocations",
                 columns: table => new
                 {
-                    LastModified = table.Column<DateTime>(type: "timestamp with time zone", nullable: false),
+                    UpdateTime = table.Column<DateTime>(type: "timestamp with time zone", nullable: false),
                     DriverId = table.Column<Guid>(type: "uuid", nullable: false),
                     Location_Latitude = table.Column<double>(type: "double precision", nullable: false),
                     Location_Longitude = table.Column<double>(type: "double precision", nullable: false)
                 },
                 constraints: table =>
                 {
-                    table.PrimaryKey("PK_DriverLocations", x => new { x.DriverId, x.LastModified });
+                    table.PrimaryKey("PK_DriverLocations", x => new { x.DriverId, x.UpdateTime });
                     table.ForeignKey(
                         name: "FK_DriverLocations_Drivers_DriverId",
                         column: x => x.DriverId,

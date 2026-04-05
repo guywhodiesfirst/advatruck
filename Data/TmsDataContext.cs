@@ -3,12 +3,17 @@ using Microsoft.EntityFrameworkCore;
 
 namespace Data;
 
+/// <summary>
+/// Data context for the transport management system.
+/// </summary>
+/// <param name="options">Data context options.</param>
 public class TmsDataContext(DbContextOptions<TmsDataContext> options)
     : DbContext(options)
 {
     public DbSet<Driver> Drivers { get; set; }
     public DbSet<DriverLocation> DriverLocations { get; set; }
     
+    /// <inheritdoc/>
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
         modelBuilder.Entity<DriverLocation>()
@@ -21,7 +26,7 @@ public class TmsDataContext(DbContextOptions<TmsDataContext> options)
             .OnDelete(DeleteBehavior.Cascade);
 
         modelBuilder.Entity<DriverLocation>()
-            .HasKey(dl => new { dl.DriverId, dl.LastModified });
+            .HasKey(dl => new { dl.DriverId, LastModified = dl.UpdateTime });
         
         modelBuilder.Entity<DriverLocation>()
             .HasIndex(d => d.DriverId);

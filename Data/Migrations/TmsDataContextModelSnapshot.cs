@@ -65,10 +65,10 @@ namespace Data.Migrations
                     b.Property<Guid>("DriverId")
                         .HasColumnType("uuid");
 
-                    b.Property<DateTime>("LastModified")
+                    b.Property<DateTime>("UpdateTime")
                         .HasColumnType("timestamp with time zone");
 
-                    b.HasKey("DriverId", "LastModified");
+                    b.HasKey("DriverId", "UpdateTime");
 
                     b.HasIndex("DriverId");
 
@@ -88,7 +88,7 @@ namespace Data.Migrations
                             b1.Property<Guid>("DriverLocationDriverId")
                                 .HasColumnType("uuid");
 
-                            b1.Property<DateTime>("DriverLocationLastModified")
+                            b1.Property<DateTime>("DriverLocationUpdateTime")
                                 .HasColumnType("timestamp with time zone");
 
                             b1.Property<double>("Latitude")
@@ -97,12 +97,12 @@ namespace Data.Migrations
                             b1.Property<double>("Longitude")
                                 .HasColumnType("double precision");
 
-                            b1.HasKey("DriverLocationDriverId", "DriverLocationLastModified");
+                            b1.HasKey("DriverLocationDriverId", "DriverLocationUpdateTime");
 
                             b1.ToTable("DriverLocations");
 
                             b1.WithOwner()
-                                .HasForeignKey("DriverLocationDriverId", "DriverLocationLastModified");
+                                .HasForeignKey("DriverLocationDriverId", "DriverLocationUpdateTime");
                         });
 
                     b.Navigation("Driver");
