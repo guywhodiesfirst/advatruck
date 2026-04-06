@@ -1,6 +1,6 @@
 using System.ComponentModel.DataAnnotations;
 
-namespace Data.Models;
+namespace Core.Entities;
 
 public class Driver
 {

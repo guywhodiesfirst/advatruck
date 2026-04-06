@@ -1,5 +1,5 @@
+using Core.Entities;
 using Data.Interfaces;
-using Data.Models;
 using Microsoft.EntityFrameworkCore;
 
 namespace Data.Repositories;
@@ -18,7 +18,16 @@ public class DriverRepository(TmsDataContext context) : IDriverRepository
     /// <inheritdoc/>
     public async Task<Driver?> GetByIdAsync(Guid id, CancellationToken cancellationToken = default)
     {
-        return await context.Drivers.FindAsync([id], cancellationToken);
+        return await context.Drivers
+            .Include(d => d.DriverLocations)
+            .FirstOrDefaultAsync(d => d.Id == id, cancellationToken);
+    }
+
+    public async Task<Driver?> GetByEmailAsync(string email, CancellationToken cancellationToken = default)
+    {
+        return await context.Drivers
+            .Include(d => d.DriverLocations)
+            .FirstOrDefaultAsync(d => d.Email == email, cancellationToken);
     }
 
     /// <inheritdoc/>

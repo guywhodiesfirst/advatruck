@@ -1,10 +1,17 @@
+using Core.Entities;
 using Data;
-using Data.Models;
 
 namespace API.Extensions;
 
+/// <summary>
+/// Extensions for transport management system data context.
+/// </summary>
 public static class TmsDataContextExtensions
 {
+    /// <summary>
+    /// Method for seeding data in the data context.
+    /// </summary>
+    /// <param name="context">Transport management system data context.</param>
     public static void SeedData(this TmsDataContext context)
     {
         if (context.Drivers.Any()) return;

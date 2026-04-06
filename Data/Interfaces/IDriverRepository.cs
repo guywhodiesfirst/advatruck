@@ -1,4 +1,4 @@
-using Data.Models;
+using Core.Entities;
 
 namespace Data.Interfaces;
 
@@ -21,6 +21,14 @@ public interface IDriverRepository
     /// <param name="cancellationToken">Cancellation token.</param>
     /// <returns>Driver.</returns>
     Task<Driver?> GetByIdAsync(Guid id, CancellationToken cancellationToken = default);
+    
+    /// <summary>
+    /// Get the driver by email.
+    /// </summary>
+    /// <param name="email">Driver's email.</param>
+    /// <param name="cancellationToken">Cancellation token.</param>
+    /// <returns>Driver.</returns>
+    Task<Driver?> GetByEmailAsync(string email, CancellationToken cancellationToken = default);
     
     /// <summary>
     /// Add a driver to the database.

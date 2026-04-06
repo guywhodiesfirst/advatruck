@@ -1,6 +1,6 @@
 using Core.Types;
 
-namespace Data.Models;
+namespace Core.Entities;
 
 public class DriverLocation
 {
