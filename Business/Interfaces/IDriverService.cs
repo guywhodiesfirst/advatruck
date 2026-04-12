@@ -1,6 +1,6 @@
-using Core.Entities;
-
 namespace Business.Interfaces;
+
+using Core.Entities;
 
 /// <summary>
 /// Service for managing driver business logic.
@@ -21,7 +21,7 @@ public interface IDriverService
     /// <param name="cancellationToken">Cancellation token.</param>
     /// <returns>Driver if found, otherwise null.</returns>
     Task<Driver?> GetByIdAsync(Guid id, CancellationToken cancellationToken = default);
-    
+
     /// <summary>
     /// Login driver by email.
     /// </summary>

@@ -1,8 +1,8 @@
+namespace Data.Repositories;
+
 using Core.Entities;
 using Data.Interfaces;
 using Microsoft.EntityFrameworkCore;
-
-namespace Data.Repositories;
 
 /// <inheritdoc/>
 public class DriverRepository(TmsDataContext context) : IDriverRepository

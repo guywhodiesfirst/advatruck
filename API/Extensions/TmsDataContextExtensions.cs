@@ -1,7 +1,7 @@
+namespace API.Extensions;
+
 using Core.Entities;
 using Data;
-
-namespace API.Extensions;
 
 /// <summary>
 /// Extensions for transport management system data context.
@@ -14,7 +14,11 @@ public static class TmsDataContextExtensions
     /// <param name="context">Transport management system data context.</param>
     public static void SeedData(this TmsDataContext context)
     {
-        if (context.Drivers.Any()) return;
+        if (context.Drivers.Any())
+        {
+            return;
+        }
+
         context.Drivers.AddRange(
             new Driver
             {
@@ -24,7 +28,7 @@ public static class TmsDataContextExtensions
                 Phone = "+380501234567",
                 Email = "ivan.petrenko@example.com",
                 Note = "Досвідчений водій",
-                RegistrationDate = DateTime.UtcNow
+                RegistrationDate = DateTime.UtcNow,
             },
             new Driver
             {
@@ -34,9 +38,8 @@ public static class TmsDataContextExtensions
                 Phone = "+380671112233",
                 Email = "oleksii.kovalenko@example.com",
                 Note = null,
-                RegistrationDate = DateTime.UtcNow
-            }
-        );
+                RegistrationDate = DateTime.UtcNow,
+            });
         context.SaveChanges();
     }
 }

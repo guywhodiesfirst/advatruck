@@ -1,4 +1,4 @@
-namespace API.Models;
+namespace Core.Models;
 
 public class LoginRequestDto
 {

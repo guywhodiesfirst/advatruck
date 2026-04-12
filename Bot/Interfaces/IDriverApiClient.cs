@@ -1,7 +1,7 @@
+namespace Bot.Interfaces;
+
 using Core.Entities;
 using Telegram.Bot.Types;
-
-namespace Bot.Interfaces;
 
 /// <summary>
 /// Client for interaction with Driver API.

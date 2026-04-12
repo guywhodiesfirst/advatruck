@@ -1,6 +1,6 @@
-using Core.Types;
-
 namespace Core.Entities;
+
+using Core.Types;
 
 public class DriverLocation
 {

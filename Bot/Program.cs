@@ -27,15 +27,19 @@ try
     builder.Services
         .AddOptions<TelegramBotOptions>()
         .Bind(builder.Configuration.GetSection(TelegramBotOptions.ConfigurationSection))
-        .Validate(o => !string.IsNullOrWhiteSpace(o.TelegramToken),
+        .Validate(
+            o => !string.IsNullOrWhiteSpace(o.TelegramToken),
             $"{nameof(TelegramBotOptions.TelegramToken)} is required")
-        .Validate(o => !string.IsNullOrWhiteSpace(o.WebhookUrl),
+        .Validate(
+            o => !string.IsNullOrWhiteSpace(o.WebhookUrl),
             $"{nameof(TelegramBotOptions.WebhookUrl)} is required")
-        .Validate(o => !string.IsNullOrWhiteSpace(o.RedisConnectionString),
+        .Validate(
+            o => !string.IsNullOrWhiteSpace(o.RedisConnectionString),
             $"{nameof(TelegramBotOptions.RedisConnectionString)} is required")
-        .Validate(o => !string.IsNullOrWhiteSpace(o.BaseApiUrl),
+        .Validate(
+            o => !string.IsNullOrWhiteSpace(o.BaseApiUrl),
             $"{nameof(TelegramBotOptions.BaseApiUrl)} is required");
-    
+
     var opts = new TelegramBotOptions();
     builder.Configuration.Bind(TelegramBotOptions.ConfigurationSection, opts);
 

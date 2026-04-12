@@ -1,11 +1,11 @@
+namespace Bot.Handlers;
+
 using Bot.Interfaces;
 using Bot.Services;
 using Telegram.Bot;
 using Telegram.Bot.Types;
 using Telegram.Bot.Types.Enums;
 using Telegram.Bot.Types.ReplyMarkups;
-
-namespace Bot.Handlers;
 
 /// <summary>
 /// Handles incoming Telegram updates and routes them to appropriate handlers.
@@ -18,15 +18,21 @@ public class UpdateHandler(
     /// <summary>
     /// Entry point for processing Telegram updates.
     /// </summary>
+    /// <param name="update">The incoming Telegram update.</param>
+    /// <returns>A <see cref="Task"/> representing the asynchronous operation.</returns>
     public async Task HandleAsync(Update update)
     {
         if (update.Type != UpdateType.Message && update.Type != UpdateType.EditedMessage)
+        {
             return;
+        }
 
         var message = update.Message ?? update.EditedMessage;
 
         if (message == null)
+        {
             return;
+        }
 
         var chatId = message.Chat.Id;
 
@@ -37,7 +43,9 @@ public class UpdateHandler(
         }
 
         if (message.Text is not { } text)
+        {
             return;
+        }
 
         if (await sessions.IsAwaitingEmailAsync(chatId))
         {
@@ -52,6 +60,9 @@ public class UpdateHandler(
     /// <summary>
     /// Handles text commands from user.
     /// </summary>
+    /// <param name="chatId">Telegram chat ID.</param>
+    /// <param name="text">Received text message.</param>
+    /// <returns>A <see cref="Task"/> representing the asynchronous operation.</returns>
     private async Task HandleCommandAsync(long chatId, string text)
     {
         switch (text)
@@ -76,8 +87,7 @@ public class UpdateHandler(
                 await bot.SendMessage(
                     chatId,
                     "Рейс завершено ✅",
-                    replyMarkup: GetStartKeyboard()
-                );
+                    replyMarkup: GetStartKeyboard());
                 return;
 
             case BotButtons.StartTracking:
@@ -88,8 +98,7 @@ public class UpdateHandler(
                 await bot.SendMessage(
                     chatId,
                     "Використай кнопки 👇",
-                    replyMarkup: GetStartKeyboard()
-                );
+                    replyMarkup: GetStartKeyboard());
                 return;
         }
     }
@@ -97,6 +106,9 @@ public class UpdateHandler(
     /// <summary>
     /// Handles driver login by email.
     /// </summary>
+    /// <param name="chatId">Telegram chat ID.</param>
+    /// <param name="email">Email entered by the user.</param>
+    /// <returns>A <see cref="Task"/> representing the asynchronous operation.</returns>
     private async Task HandleLoginAsync(long chatId, string email)
     {
         var driver = await api.LoginAsync(email);
@@ -112,13 +124,15 @@ public class UpdateHandler(
         await bot.SendMessage(
             chatId,
             $"✅ Вітаю, {driver.FirstName}",
-            replyMarkup: GetMainKeyboard()
-        );
+            replyMarkup: GetMainKeyboard());
     }
 
     /// <summary>
     /// Handles incoming location updates.
     /// </summary>
+    /// <param name="chatId">Telegram chat ID.</param>
+    /// <param name="location">Location data received from Telegram.</param>
+    /// <returns>A <see cref="Task"/> representing the asynchronous operation.</returns>
     private async Task HandleLocationAsync(long chatId, Location location)
     {
         var driverId = await sessions.GetAuthenticatedDriverAsync(chatId);
@@ -147,8 +161,7 @@ public class UpdateHandler(
 
             var message = await bot.SendMessage(
                 chatId,
-                "📡 Трекінг активний\n\n⏱ Оновлено: —"
-            );
+                "📡 Трекінг активний\n\n⏱ Оновлено: —");
 
             await sessions.SaveTrackingMessageIdAsync(chatId, message.MessageId);
             return;
@@ -157,15 +170,16 @@ public class UpdateHandler(
         var messageId = await sessions.GetTrackingMessageIdAsync(chatId);
 
         if (messageId == null)
+        {
             return;
+        }
 
         try
         {
             await bot.EditMessageText(
                 chatId: chatId,
                 messageId: messageId.Value,
-                text: $"📡 Трекінг активний\n\n⏱ Оновлено: {DateTime.Now:dd.MM.yyyy HH:mm:ss}"
-            );
+                text: $"📡 Трекінг активний\n\n⏱ Оновлено: {DateTime.Now:dd.MM.yyyy HH:mm:ss}");
         }
         catch
         {
@@ -176,18 +190,21 @@ public class UpdateHandler(
     /// <summary>
     /// Sends welcome message with login button.
     /// </summary>
+    /// <param name="chatId">Telegram chat ID.</param>
+    /// <returns>A <see cref="Task"/> representing the asynchronous operation.</returns>
     private async Task SendStartMessageAsync(long chatId)
     {
         await bot.SendMessage(
             chatId,
             "👋 Вітаю!\nНатисни 🔐 Увійти щоб почати",
-            replyMarkup: GetStartKeyboard()
-        );
+            replyMarkup: GetStartKeyboard());
     }
 
     /// <summary>
     /// Sends instructions for starting tracking.
     /// </summary>
+    /// <param name="chatId">Telegram chat ID.</param>
+    /// <returns>A <see cref="Task"/> representing the asynchronous operation.</returns>
     private async Task SendTrackingInstructionsAsync(long chatId)
     {
         await bot.SendMessage(
@@ -197,44 +214,46 @@ public class UpdateHandler(
             "2️⃣ Обери 'Місце'\n" +
             "3️⃣ Натисни \"Поділитися моїм маячком на мапі\"\n\n" +
             "Бот буде отримувати оновлення автоматично 🚀",
-            replyMarkup: GetMainKeyboard()
-        );
+            replyMarkup: GetMainKeyboard());
     }
 
     /// <summary>
     /// Sends unauthorized response and shows login keyboard.
     /// </summary>
+    /// <param name="chatId">Telegram chat ID.</param>
+    /// <returns>A <see cref="Task"/> representing the asynchronous operation.</returns>
     private async Task SendUnauthorizedAsync(long chatId)
     {
         await bot.SendMessage(
             chatId,
             $"Спочатку увійди через {BotButtons.Login}",
-            replyMarkup: GetStartKeyboard()
-        );
+            replyMarkup: GetStartKeyboard());
     }
 
     /// <summary>
     /// Keyboard shown before authentication.
     /// </summary>
+    /// <returns>A <see cref="ReplyKeyboardMarkup"/> with login button.</returns>
     private static ReplyKeyboardMarkup GetStartKeyboard() => new(
     [
-        [ new KeyboardButton(BotButtons.Login) ]
+        [new KeyboardButton(BotButtons.Login)]
     ])
     {
-        ResizeKeyboard = true
+        ResizeKeyboard = true,
     };
 
     /// <summary>
     /// Main keyboard shown after authentication.
     /// </summary>
+    /// <returns>A <see cref="ReplyKeyboardMarkup"/> with main action buttons.</returns>
     private static ReplyKeyboardMarkup GetMainKeyboard() => new(
     [
-        [ KeyboardButton.WithRequestLocation(BotButtons.SendLocation) ],
-        [ new KeyboardButton(BotButtons.StartTracking) ],
-        [ new KeyboardButton(BotButtons.StartTrip) ],
-        [ new KeyboardButton(BotButtons.EndTrip) ]
+        [KeyboardButton.WithRequestLocation(BotButtons.SendLocation)],
+        [new KeyboardButton(BotButtons.StartTracking)],
+        [new KeyboardButton(BotButtons.StartTrip)],
+        [new KeyboardButton(BotButtons.EndTrip)]
     ])
     {
-        ResizeKeyboard = true
+        ResizeKeyboard = true,
     };
 }

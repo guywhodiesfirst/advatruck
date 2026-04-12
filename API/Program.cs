@@ -5,8 +5,8 @@ using Business.Services;
 using Data;
 using Data.Interfaces;
 using Data.Repositories;
-using Serilog;
 using Microsoft.EntityFrameworkCore;
+using Serilog;
 
 Log.Logger = new LoggerConfiguration()
     .WriteTo.Console()
@@ -20,16 +20,14 @@ try
     {
         lc.WriteTo.Console();
     });
-    
+
     builder.Services.AddControllers();
 
     builder.Services.AddHttpClient();
-    
+
     builder.Services.AddDbContext<TmsDataContext>(options =>
         options.UseNpgsql(
-            builder.Configuration.GetConnectionString("DefaultConnection")
-        )
-    );
+            builder.Configuration.GetConnectionString("DefaultConnection")));
 
     builder.Services.AddScoped<IDriverRepository, DriverRepository>();
     builder.Services.AddScoped<IDriverLocationRepository, DriverLocationRepository>();
@@ -57,15 +55,15 @@ try
     {
         var dbContext = scope.ServiceProvider.GetRequiredService<TmsDataContext>();
         await dbContext.Database.MigrateAsync();
-        
+
         dbContext.SeedData();
     }
-    
+
     app.UseHttpsRedirection();
     app.UseAuthorization();
-    
+
     app.MapControllers();
-    
+
     app.Run();
 }
 catch (Exception ex)

@@ -1,8 +1,8 @@
-using Core.Entities;
-using Business.Interfaces;
-using Data.Interfaces;
-
 namespace Business.Services;
+
+using Business.Interfaces;
+using Core.Entities;
+using Data.Interfaces;
 
 /// <inheritdoc/>
 public class DriverService(IDriverRepository driverRepository) : IDriverService
@@ -18,7 +18,7 @@ public class DriverService(IDriverRepository driverRepository) : IDriverService
     {
         return await driverRepository.GetByIdAsync(id, cancellationToken);
     }
-    
+
     /// <inheritdoc/>
     public async Task<Driver?> LoginAsync(string email, CancellationToken cancellationToken = default)
     {
@@ -39,7 +39,9 @@ public class DriverService(IDriverRepository driverRepository) : IDriverService
         var driver = await driverRepository.GetByIdAsync(id, cancellationToken);
 
         if (driver == null)
+        {
             return;
+        }
 
         await driverRepository.DeleteAsync(driver, cancellationToken);
     }

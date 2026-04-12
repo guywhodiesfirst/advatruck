@@ -1,17 +1,18 @@
+namespace Bot.Services;
+
 using Bot.Interfaces;
 using Core.Entities;
 using Microsoft.Extensions.Options;
 using Telegram.Bot.Types;
-
-namespace Bot.Services;
 
 /// <inheritdoc/>
 public class DriverApiClient(
     HttpClient http,
     IOptions<TelegramBotOptions> options) : IDriverApiClient
 {
-    private readonly string _baseUrl = 
+    private readonly string _baseUrl =
         $"{options.Value.BaseApiUrl}/api/v{options.Value.ApiVersion}/drivers";
+
     /// <inheritdoc/>
     public async Task<Driver?> LoginAsync(string email)
     {
@@ -20,7 +21,9 @@ public class DriverApiClient(
             new { Email = email });
 
         if (!response.IsSuccessStatusCode)
+        {
             return null;
+        }
 
         return await response.Content.ReadFromJsonAsync<Driver>();
     }
@@ -35,7 +38,7 @@ public class DriverApiClient(
                 DriverId = driverId,
                 location.Latitude,
                 location.Longitude,
-                Timestamp = DateTime.UtcNow
+                Timestamp = DateTime.UtcNow,
             });
     }
 }

@@ -1,9 +1,9 @@
-using API.Models;
+namespace API.Controllers;
+
 using Asp.Versioning;
 using Business.Interfaces;
+using Core.Models;
 using Microsoft.AspNetCore.Mvc;
-
-namespace API.Controllers;
 
 [ApiController]
 [Route("api/v{v:apiVersion}/drivers")]
@@ -16,7 +16,9 @@ public class DriversController(IDriverService driverService) : ControllerBase
         var driver = await driverService.LoginAsync(request.Email);
 
         if (driver == null)
+        {
             return Unauthorized();
+        }
 
         return Ok(driver);
     }

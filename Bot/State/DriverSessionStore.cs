@@ -1,7 +1,7 @@
+namespace Bot.State;
+
 using Bot.Interfaces;
 using StackExchange.Redis;
-
-namespace Bot.State;
 
 /// <summary>
 /// Redis-based implementation of driver session storage.
@@ -10,9 +10,13 @@ namespace Bot.State;
 public class DriverSessionStore(IConnectionMultiplexer redis) : IDriverSessionStore
 {
     private readonly IDatabase _db = redis.GetDatabase();
+
     private static string TrackingStateKey(long chatId) => $"driver:tracking:state:{chatId}";
+
     private static string TrackingMessageKey(long chatId) => $"driver:tracking:message:{chatId}";
+
     private static string AuthKey(long chatId) => $"driver:auth:{chatId}";
+
     private static string AwaitingEmailKey(long chatId) => $"driver:login:{chatId}";
 
     /// <inheritdoc />
@@ -27,7 +31,9 @@ public class DriverSessionStore(IConnectionMultiplexer redis) : IDriverSessionSt
         var value = await _db.StringGetAsync(AuthKey(chatId));
 
         if (value.IsNullOrEmpty)
+        {
             return null;
+        }
 
         return Guid.Parse(value!);
     }
@@ -56,7 +62,7 @@ public class DriverSessionStore(IConnectionMultiplexer redis) : IDriverSessionSt
     {
         await _db.KeyDeleteAsync(AwaitingEmailKey(chatId));
     }
-    
+
     /// <inheritdoc/>
     public async Task SaveTrackingMessageIdAsync(long chatId, int messageId)
     {
@@ -69,7 +75,9 @@ public class DriverSessionStore(IConnectionMultiplexer redis) : IDriverSessionSt
         var value = await _db.StringGetAsync(TrackingMessageKey(chatId));
 
         if (value.IsNullOrEmpty)
+        {
             return null;
+        }
 
         return int.Parse(value!);
     }
