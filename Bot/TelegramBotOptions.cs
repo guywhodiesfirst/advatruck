@@ -15,4 +15,6 @@ public class TelegramBotOptions
     public string BaseApiUrl { get; set; }
 
     public string ApiVersion { get; set; } = "1";
+
+    public int LocationUpdateIntervalMinutes { get; set; } = 5;
 }

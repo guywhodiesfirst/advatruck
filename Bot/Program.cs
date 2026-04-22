@@ -2,8 +2,11 @@ using Bot;
 using Bot.Handlers;
 using Bot.Interfaces;
 using Bot.Services;
-using Bot.State;
+using Bot.Workers;
+using Data.Interfaces;
+using Data.State;
 using Microsoft.AspNetCore.Mvc;
+using RabbitMQ.Client;
 using Serilog;
 using StackExchange.Redis;
 using Telegram.Bot;
@@ -19,7 +22,7 @@ try
 
     var builder = WebApplication.CreateBuilder(args);
 
-    builder.Host.UseSerilog((ctx, lc) =>
+    builder.Host.UseSerilog((_, lc) =>
     {
         lc.WriteTo.Console();
     });
@@ -38,8 +41,23 @@ try
             $"{nameof(TelegramBotOptions.RedisConnectionString)} is required")
         .Validate(
             o => !string.IsNullOrWhiteSpace(o.BaseApiUrl),
-            $"{nameof(TelegramBotOptions.BaseApiUrl)} is required");
+            $"{nameof(TelegramBotOptions.BaseApiUrl)} is required")
+        .Validate(
+            o => o.LocationUpdateIntervalMinutes > 0,
+            $"{nameof(TelegramBotOptions.LocationUpdateIntervalMinutes)} is required");
 
+    builder.Services.AddSingleton<IConnection>(sp =>
+    {
+        var factory = new ConnectionFactory
+        {
+            HostName = "localhost",
+            UserName = "admin",
+            Password = "admin",
+            Port = 5672,
+        };
+
+        return factory.CreateConnection();
+    });
     var opts = new TelegramBotOptions();
     builder.Configuration.Bind(TelegramBotOptions.ConfigurationSection, opts);
 
@@ -51,10 +69,15 @@ try
         ConnectionMultiplexer.Connect(opts.RedisConnectionString));
 
     builder.Services.AddSingleton<IDriverSessionStore, DriverSessionStore>();
+    builder.Services.AddSingleton<IAuthService, AuthService>();
+    builder.Services.AddSingleton<ICommandService, CommandService>();
+    builder.Services.AddSingleton<ITrackingService, TrackingService>();
 
     builder.Services.AddHttpClient();
     builder.Services.AddSingleton<DriverApiClient>();
     builder.Services.AddSingleton<UpdateHandler>();
+
+    builder.Services.AddHostedService<DriverEventConsumer>();
 
     var app = builder.Build();
 

@@ -15,6 +15,13 @@ public interface IDriverRepository
     Task<IEnumerable<Driver>> GetAllAsync(CancellationToken cancellationToken = default);
 
     /// <summary>
+    /// Retrieve all the drivers who are currently on a trip.
+    /// </summary>
+    /// <param name="cancellationToken">Cancellation token.</param>
+    /// <returns>List containing drivers who are currently on a trip.</returns>
+    Task<IEnumerable<Driver>> GetAllInTripAsync(CancellationToken cancellationToken = default);
+
+    /// <summary>
     /// Get the driver by ID.
     /// </summary>
     /// <param name="id">Driver's ID.</param>

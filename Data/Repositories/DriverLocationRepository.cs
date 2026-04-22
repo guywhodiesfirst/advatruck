@@ -36,7 +36,7 @@ public class DriverLocationRepository(TmsDataContext context)
         DriverLocation driverLocation,
         CancellationToken cancellationToken = default)
     {
-        driverLocation.UpdateTime = DateTime.Now;
+        driverLocation.UpdateTime = DateTime.UtcNow;
         await context.DriverLocations.AddAsync(driverLocation, cancellationToken);
         await context.SaveChangesAsync(cancellationToken);
         return driverLocation;

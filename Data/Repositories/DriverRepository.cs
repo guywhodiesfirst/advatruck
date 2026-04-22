@@ -15,6 +15,12 @@ public class DriverRepository(TmsDataContext context) : IDriverRepository
             .ToListAsync(cancellationToken);
     }
 
+    public async Task<IEnumerable<Driver>> GetAllInTripAsync(CancellationToken cancellationToken = default)
+    {
+        // trips are currently not implemented
+        return await GetAllAsync(cancellationToken);
+    }
+
     /// <inheritdoc/>
     public async Task<Driver?> GetByIdAsync(Guid id, CancellationToken cancellationToken = default)
     {
@@ -33,7 +39,7 @@ public class DriverRepository(TmsDataContext context) : IDriverRepository
     /// <inheritdoc/>
     public async Task<Guid> AddAsync(Driver driver, CancellationToken cancellationToken = default)
     {
-        driver.RegistrationDate = DateTime.Now;
+        driver.RegistrationDate = DateTime.UtcNow;
         await context.Drivers.AddAsync(driver, cancellationToken);
         await context.SaveChangesAsync(cancellationToken);
         return driver.Id;

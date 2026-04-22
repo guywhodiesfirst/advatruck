@@ -2,6 +2,8 @@ namespace Bot.Services;
 
 using Bot.Interfaces;
 using Core.Entities;
+using Core.Models;
+using Core.Types;
 using Microsoft.Extensions.Options;
 using Telegram.Bot.Types;
 
@@ -31,14 +33,15 @@ public class DriverApiClient(
     /// <inheritdoc/>
     public async Task SendLocationAsync(Guid driverId, Location location)
     {
-        await http.PostAsJsonAsync(
-            $"{_baseUrl}/location",
-            new
+        var request = new TrackingUpdateRequestDto
+        {
+            Location = new GeoPoint
             {
-                DriverId = driverId,
-                location.Latitude,
-                location.Longitude,
-                Timestamp = DateTime.UtcNow,
-            });
+                Latitude = location.Latitude,
+                Longitude = location.Longitude,
+            },
+            Timestamp = DateTime.UtcNow,
+        };
+        await http.PostAsJsonAsync($"{_baseUrl}/{driverId}/locations", request);
     }
 }

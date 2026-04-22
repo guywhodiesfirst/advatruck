@@ -1,4 +1,4 @@
-namespace Bot.Interfaces;
+namespace Data.Interfaces;
 
 /// <summary>
 /// Provides access to driver session storage.
@@ -86,4 +86,51 @@ public interface IDriverSessionStore
     /// <param name="chatId">Telegram chat ID.</param>
     /// <returns>A <see cref="Task"/> representing the asynchronous operation.</returns>
     Task ClearTrackingAsync(long chatId);
+
+    /// <summary>
+    /// Saves timestamp of the last received location update for a driver session.
+    /// </summary>
+    /// <param name="driverId">ID of the driver.</param>
+    /// <param name="time">UTC timestamp of the last location update.</param>
+    /// <returns>A <see cref="Task"/> representing the asynchronous operation.</returns>
+    Task SaveLastLocationUpdateAsync(Guid driverId, DateTime time);
+
+    /// <summary>
+    /// Retrieves timestamp of the last received location update for a driver session.
+    /// </summary>
+    /// <param name="driverId">ID of the driver.</param>
+    /// <returns>
+    /// A <see cref="Task"/> containing the last update timestamp if exists,
+    /// otherwise <see langword="null"/>.
+    /// </returns>
+    Task<DateTime?> GetLastLocationUpdateAsync(Guid driverId);
+
+    /// <summary>
+    /// Retrieves Telegram chatId for a given driverId.
+    /// </summary>
+    /// <param name="driverId">Driver identifier.</param>
+    /// <returns>ChatId.</returns>
+    Task<long?> GetChatIdByDriverIdAsync(Guid driverId);
+
+    /// <summary>
+    /// Saves timestamp when tracking was stopped for a specific chat session.
+    /// </summary>
+    /// <param name="chatId">Telegram chat ID.</param>
+    /// <param name="time">UTC timestamp when tracking was stopped.</param>
+    /// <returns>A <see cref="Task"/> representing the asynchronous operation.</returns>
+    Task SaveTrackingStoppedAtAsync(long chatId, DateTime time);
+
+    /// <summary>
+    /// Retrieves timestamp when tracking was last stopped for a specific chat session.
+    /// </summary>
+    /// <param name="chatId">Telegram chat ID.</param>
+    /// <returns>Timestamp of the last time when tracking stopped.</returns>
+    Task<DateTime?> GetTrackingStoppedAtAsync(long chatId);
+
+    /// <summary>
+    /// Clears driver TrackingStoppedAt timestamp.
+    /// </summary>
+    /// <param name="chatId">Telegram chat ID.</param>
+    /// <returns>A <see cref="Task"/> representing the asynchronous operation.</returns>
+    Task ClearTrackingStoppedAtAsync(long chatId);
 }

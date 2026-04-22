@@ -29,7 +29,7 @@ public interface IDriverLocationRepository
     /// </summary>
     /// <param name="driverLocation">Driver location.</param>
     /// <param name="cancellationToken">Cancellation token.</param>
-    /// <returns><placeholder>A <see cref="Task"/> representing the asynchronous operation.</placeholder></returns>
+    /// <returns>A <see cref="Task"/> representing the asynchronous operation.</returns>
     Task<DriverLocation> AddAsync(
         DriverLocation driverLocation,
         CancellationToken cancellationToken = default);
