@@ -7,10 +7,11 @@ using Core.Exceptions;
 using Core.Models;
 using Data.Interfaces;
 
-public class DriverLocationService(IDriverLocationRepository repo)
+public class DriverLocationService(
+    IDriverLocationRepository repo,
+    IGeocodingService geocodingService)
     : IDriverLocationService
 {
-    /// <inheritdoc/>
     public async Task<DriverLocation?> GetLastAsync(
         Guid driverId,
         CancellationToken cancellationToken = default)
@@ -21,16 +22,18 @@ public class DriverLocationService(IDriverLocationRepository repo)
                ?? throw new TmsException($"Last location for driver {driverId} not found", HttpStatusCode.NotFound);
     }
 
-    /// <inheritdoc/>
     public async Task<DriverLocation> AddAsync(
         Guid driverId,
         TrackingUpdateRequestDto request,
         CancellationToken cancellationToken = default)
     {
+        var address = await geocodingService.GetAddressAsync(request.Location, cancellationToken);
+
         var entity = new DriverLocation
         {
             DriverId = driverId,
             Location = request.Location,
+            Address = address,
             UpdateTime = request.Timestamp,
         };
 

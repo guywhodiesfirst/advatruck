@@ -11,5 +11,7 @@ public class LoadLocation
 
     public DateTime Timestamp { get; set; }
 
+    public string Address { get; set; } = string.Empty;
+
     public required GeoPoint Location { get; set; }
 }

@@ -110,6 +110,7 @@ try
     builder.Services.AddScoped<IDriverRepository, DriverRepository>();
     builder.Services.AddScoped<IDriverLocationRepository, DriverLocationRepository>();
     builder.Services.AddScoped<IDriverService, DriverService>();
+    builder.Services.AddScoped<IGeocodingService, NominatimService>();
     builder.Services.AddScoped<IDriverActivityService, DriverActivityService>();
     builder.Services.AddScoped<IDriverLocationService, DriverLocationService>();
 
@@ -118,6 +119,12 @@ try
     builder.Services.AddScoped<DriverEventPublisher>();
 
     builder.Services.AddHostedService<DriverActivityWorker>();
+
+    builder.Services.AddHttpClient<IGeocodingService, NominatimService>(c =>
+    {
+        c.BaseAddress = new Uri("https://nominatim.openstreetmap.org/");
+        c.DefaultRequestHeaders.Add("User-Agent", "TmsLogisticsBot/1.0");
+    });
 
     builder.Services.AddApiVersioning(options =>
     {
