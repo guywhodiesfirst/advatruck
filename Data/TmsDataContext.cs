@@ -15,6 +15,8 @@ public class TmsDataContext(DbContextOptions<TmsDataContext> options)
 {
     public DbSet<Driver> Drivers { get; set; }
 
+    public DbSet<Vehicle> Vehicles { get; set; }
+
     public DbSet<DriverLocation> DriverLocations { get; set; }
 
     public DbSet<LoadLocation> LoadLocations { get; set; }
@@ -26,6 +28,12 @@ public class TmsDataContext(DbContextOptions<TmsDataContext> options)
     /// <inheritdoc/>
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
+        modelBuilder.Entity<Driver>()
+            .HasOne(d => d.Vehicle)
+            .WithOne(v => v.Driver)
+            .HasForeignKey<Vehicle>(v => v.DriverId)
+            .OnDelete(DeleteBehavior.SetNull);
+
         modelBuilder.Entity<DriverLocation>()
             .OwnsOne(d => d.Location);
 

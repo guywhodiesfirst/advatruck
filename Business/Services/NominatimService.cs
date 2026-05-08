@@ -21,12 +21,7 @@ public class NominatimService(HttpClient httpClient) : IGeocodingService
 
             var response = await httpClient.GetFromJsonAsync<NominatimResponse>(url, cancellationToken);
 
-            if (response?.Address == null)
-            {
-                return "Address not found";
-            }
-
-            return FormatAddress(response.Address);
+            return response?.Address == null ? "Address not found" : FormatAddress(response.Address);
         }
         catch
         {

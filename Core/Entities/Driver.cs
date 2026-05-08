@@ -14,6 +14,8 @@ public class Driver
     [MaxLength(500)]
     public string? Note { get; set; }
 
+    public Vehicle? Vehicle { get; set; }
+
     public ICollection<DriverLocation> DriverLocations { get; set; } = new List<DriverLocation>();
 
     public ICollection<Load> Loads { get; set; } = new List<Load>();

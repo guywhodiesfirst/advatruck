@@ -1,11 +1,12 @@
-namespace Core.Entities;
+namespace Core.Models;
 
 using System.ComponentModel.DataAnnotations;
 
-public class Vehicle
+public class VehicleCreateUpdateDto
 {
-    public Guid Id { get; set; }
+    public Guid? Id { get; set; }
 
+    [Required]
     [StringLength(255)]
     public required string Model { get; set; }
 
@@ -14,7 +15,7 @@ public class Vehicle
     [RegularExpression(
         @"^[A-Z0-9\- ]+$",
         ErrorMessage = "Only uppercase Latin letters, numbers, hyphens, and spaces are allowed.")]
-    public string PlateNumber { get; set; } = string.Empty;
+    public required string PlateNumber { get; set; }
 
     public int CargoSpaceWidth { get; set; }
 
@@ -24,7 +25,6 @@ public class Vehicle
 
     public int MaxWeight { get; set; }
 
+    [Required(ErrorMessage = "Driver must be assigned to the vehicle.")]
     public Guid DriverId { get; set; }
-
-    public Driver Driver { get; set; } = null!;
 }

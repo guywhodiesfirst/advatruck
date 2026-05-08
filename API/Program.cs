@@ -2,9 +2,11 @@ using System.Security.Claims;
 using System.Text;
 using API;
 using API.Extensions;
+using API.Middlewares;
 using API.Notifications;
 using API.Workers;
 using Asp.Versioning;
+using Business;
 using Business.Interfaces;
 using Business.Services;
 using Core.Identity;
@@ -105,14 +107,17 @@ try
             };
         });
 
-    builder.Services.AddScoped<ITokenService, TokenService>();
+    builder.Services.AddAutoMapper(_ => { }, typeof(MappingProfile));
 
+    builder.Services.AddScoped<ITokenService, TokenService>();
     builder.Services.AddScoped<IDriverRepository, DriverRepository>();
     builder.Services.AddScoped<IDriverLocationRepository, DriverLocationRepository>();
+    builder.Services.AddScoped<IVehicleRepository, VehicleRepository>();
     builder.Services.AddScoped<IDriverService, DriverService>();
     builder.Services.AddScoped<IGeocodingService, NominatimService>();
     builder.Services.AddScoped<IDriverActivityService, DriverActivityService>();
     builder.Services.AddScoped<IDriverLocationService, DriverLocationService>();
+    builder.Services.AddScoped<IVehicleService, VehicleService>();
 
     builder.Services.AddSingleton<IDriverSessionStore, DriverSessionStore>();
 
@@ -145,6 +150,7 @@ try
     builder.Services.AddOpenApi();
 
     var app = builder.Build();
+    app.UseMiddleware<ExceptionHandlingMiddleware>();
 
     if (app.Environment.IsDevelopment())
     {

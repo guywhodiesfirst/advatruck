@@ -1,6 +1,7 @@
 namespace API.Middlewares;
 
 using System.Net;
+using System.Text.Encodings.Web;
 using System.Text.Json;
 using Core.Exceptions;
 using Microsoft.AspNetCore.Http;
@@ -40,11 +41,20 @@ public class ExceptionHandlingMiddleware(
 
         response.StatusCode = (int)statusCode;
 
-        var result = JsonSerializer.Serialize(new
+        var options = new JsonSerializerOptions
+        {
+            Encoder = JavaScriptEncoder.Default,
+            PropertyNamingPolicy = JsonNamingPolicy.CamelCase,
+            WriteIndented = true,
+        };
+
+        var result = JsonSerializer.Serialize(
+            new
         {
             error = message,
             status = response.StatusCode,
-        });
+        },
+            options);
 
         await response.WriteAsync(result);
     }
