@@ -4,6 +4,7 @@ using System.IdentityModel.Tokens.Jwt;
 using System.Security.Claims;
 using System.Text;
 using Business.Interfaces;
+using Core.Exceptions;
 using Core.Identity;
 using Microsoft.Extensions.Configuration;
 using Microsoft.IdentityModel.Tokens;
@@ -18,6 +19,14 @@ public class TokenService(IConfiguration config) : ITokenService
             new(ClaimTypes.Email, user.Email!),
             new(ClaimTypes.Role, role),
         };
+
+        var jwtKey = config["Jwt:Key"]
+            ?? throw new TmsException("JWT Key is missing in configuration");
+
+        if (jwtKey.Length < 64)
+        {
+            throw new TmsException("JWT Key is too short. Minimum 64 characters required.");
+        }
 
         var key = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(config["Jwt:Key"]!));
         var creds = new SigningCredentials(key, SecurityAlgorithms.HmacSha512Signature);

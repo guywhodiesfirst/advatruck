@@ -20,11 +20,6 @@ public class DriverLocationsController(
     {
         var result = await service.GetLastAsync(driverId, cancellationToken);
 
-        if (result == null)
-        {
-            return NotFound();
-        }
-
         return Ok(result);
     }
 

@@ -1,6 +1,8 @@
 namespace Bot.Services;
 
+using System.Net;
 using Bot.Interfaces;
+using Core.Exceptions;
 using Data.Interfaces;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
@@ -45,9 +47,19 @@ public class TrackingService(
 
                 await UpdateTrackingStatusAsync(chatId, driverId.Value, now);
             }
+            catch (TmsException ex) when (ex.StatusCode == HttpStatusCode.Unauthorized)
+            {
+                logger.LogWarning("Driver {DriverId} unauthorized. Stopping tracking.", driverId);
+                await StopTrackingAsync(chatId);
+                await bot.SendMessage(chatId, "⚠️ Сесія вичерпана. Будь ласка, увійдіть знову для продовження трекінгу.");
+            }
+            catch (TmsException ex)
+            {
+                logger.LogWarning("Business error sending location for {DriverId}: {Message}", driverId, ex.Message);
+            }
             catch (Exception ex)
             {
-                logger.LogError(ex, "Failed to send location for driver {DriverId}", driverId);
+                logger.LogError(ex, "Unexpected error sending location for driver {DriverId}", driverId);
             }
         }
     }
@@ -62,11 +74,9 @@ public class TrackingService(
         }
 
         var now = DateTime.UtcNow;
-
         await sessions.SaveTrackingStoppedAtAsync(driverId.Value, now);
 
         var messageId = await sessions.GetTrackingMessageIdAsync(driverId.Value);
-
         if (messageId != null)
         {
             try
@@ -106,11 +116,11 @@ public class TrackingService(
             await bot.EditMessageText(
                 chatId,
                 messageId.Value,
-                $"📡 Трекінг активний\n⏱ {FormatTimestamp(time)}");
+                $"📡 Трекінг активний\n⏱ Оновлено: {FormatTimestamp(time)}");
         }
         catch (Exception ex)
         {
-            logger.LogDebug("Tracking message update skipped or failed for chat {ChatId}: {Msg}", chatId, ex.Message);
+            logger.LogDebug("Tracking message update skipped for chat {ChatId}: {Msg}", chatId, ex.Message);
         }
     }
 
@@ -128,6 +138,6 @@ public class TrackingService(
 
     private static string FormatTimestamp(DateTime time)
     {
-        return time.ToLocalTime().ToString("dd.MM.yyyy HH:mm");
+        return time.ToLocalTime().ToString("HH:mm:ss");
     }
 }

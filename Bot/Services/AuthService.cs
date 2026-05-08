@@ -15,23 +15,10 @@ public class AuthService(
     public async Task HandleLoginAsync(long chatId, string email, string password)
     {
         await sessions.ClearSessionAsync(chatId);
+
         var authData = await api.LoginAsync(email, password);
 
-        if (authData == null)
-        {
-            await sessions.ClearAwaitingPasswordAsync(chatId);
-            await sessions.ClearAwaitingEmailAsync(chatId);
-
-            await bot.SendMessage(
-                chatId,
-                "❌ Помилка авторизації. Можливо, email або пароль невірні.\n" +
-                "Натисніть кнопку 'Увійти', щоб спробувати ще раз.",
-                replyMarkup: KeyboardLayout.StartKeyboard);
-            return;
-        }
-
-        await sessions.SaveBindingAsync(chatId, authData.Id, authData.Token);
-
+        await sessions.SaveBindingAsync(chatId, authData!.Id, authData.Token);
         await sessions.ClearAwaitingPasswordAsync(chatId);
 
         var profile = await api.GetProfileAsync(authData.Token);
@@ -47,7 +34,7 @@ public class AuthService(
         await bot.SendMessage(
             chatId,
             "🚪 Ви вийшли з системи. До зустрічі!",
-            replyMarkup: new Telegram.Bot.Types.ReplyMarkups.ReplyKeyboardRemove());
+            replyMarkup: KeyboardLayout.StartKeyboard);
     }
 
     /// <inheritdoc/>
@@ -76,11 +63,11 @@ public class AuthService(
         }
     }
 
-    public async Task SendGreetingAsync(long chatId, string name)
+    private async Task SendGreetingAsync(long chatId, string name)
     {
         await bot.SendMessage(
             chatId,
-            $"✅ Вітаю, {name}",
+            $"✅ Вітаю, {name}!",
             replyMarkup: KeyboardLayout.MainKeyboard);
     }
 }

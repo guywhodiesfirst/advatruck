@@ -35,7 +35,7 @@ public class CommandService(
 
                 await bot.SendMessage(
                     chatId,
-                    "Введи email:",
+                    "📧 Введи email:",
                     replyMarkup: new ReplyKeyboardRemove());
                 return;
 
@@ -68,15 +68,18 @@ public class CommandService(
                 await bot.SendMessage(
                     chatId,
                     "📡 Щоб почати трекінг:\n\n" +
-                      "1️⃣ Натисни '📎'\n" +
-                      "2️⃣ Обери 'Місце'\n" +
-                      "3️⃣ Натисни \"Поділитися моїм маячком на мапі\"\n\n" +
-                      "Бот буде отримувати оновлення автоматично 🚀",
+                      "1️⃣ Натисни '📎' (скріпка)\n" +
+                      "2️⃣ Обери 'Location' (Місце)\n" +
+                      "3️⃣ Натисни 'Share My Live Location'\n\n" +
+                      "Бот отримуватиме геопозицію автоматично 🛰",
                     replyMarkup: KeyboardLayout.MainKeyboard);
                 return;
 
             default:
-                await bot.SendMessage(chatId, "Використай кнопки 👇", replyMarkup: KeyboardLayout.MainKeyboard);
+                var isAuthenticated = await auth.IsAuthenticatedAsync(chatId);
+                var keyboard = isAuthenticated ? KeyboardLayout.MainKeyboard : KeyboardLayout.StartKeyboard;
+
+                await bot.SendMessage(chatId, "Скористайся кнопками меню 👇", replyMarkup: keyboard);
                 return;
         }
     }
@@ -101,8 +104,27 @@ public class CommandService(
             replyMarkup: new ReplyKeyboardRemove());
     }
 
+    /// <inheritdoc/>
     public async Task SendAuthenticationFailedAsync(long chatId)
     {
-        await bot.SendMessage(chatId, "🔐 Сесія вичерпана або ви не авторизовані.");
+        await bot.SendMessage(
+            chatId,
+            "🔐 Сесія вичерпана або ви не авторизовані.",
+            replyMarkup: KeyboardLayout.StartKeyboard);
+    }
+
+    /// <inheritdoc/>
+    public async Task HandleErrorAsync(long chatId, string message)
+    {
+        await sessions.ClearAwaitingEmailAsync(chatId);
+        await sessions.ClearAwaitingPasswordAsync(chatId);
+
+        var isAuthenticated = await auth.IsAuthenticatedAsync(chatId);
+        var keyboard = isAuthenticated ? KeyboardLayout.MainKeyboard : KeyboardLayout.StartKeyboard;
+
+        await bot.SendMessage(
+            chatId,
+            $"❌ {message}",
+            replyMarkup: keyboard);
     }
 }

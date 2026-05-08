@@ -34,4 +34,12 @@ public interface ICommandService
     /// <param name="chatId">Telegram chat ID.</param>
     /// <returns>A <see cref="Task"/> representing the asynchronous operation.</returns>
     Task SendAuthenticationFailedAsync(long chatId);
+
+    /// <summary>
+    /// Handles errors and provides user with error message.
+    /// </summary>
+    /// <param name="chatId">Telegram chat ID.</param>
+    /// <param name="message">Error message.</param>
+    /// <returns>A <see cref="Task"/> representing the asynchronous operation.</returns>
+    Task HandleErrorAsync(long chatId, string message);
 }

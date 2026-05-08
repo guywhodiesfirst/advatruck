@@ -1,7 +1,9 @@
 namespace Business.Services;
 
+using System.Net;
 using Business.Interfaces;
 using Core.Entities;
+using Core.Exceptions;
 using Core.Models;
 using Data.Interfaces;
 
@@ -17,7 +19,10 @@ public class DriverService(IDriverRepository driverRepository) : IDriverService
     /// <inheritdoc/>
     public async Task<Driver?> GetByIdAsync(Guid id, CancellationToken cancellationToken = default)
     {
-        return await driverRepository.GetByIdAsync(id, cancellationToken);
+        var driver = await driverRepository.GetByIdAsync(id, cancellationToken);
+
+        return driver
+               ?? throw new TmsException($"Driver with ID {id} not found", HttpStatusCode.NotFound);
     }
 
     /// <inheritdoc/>
@@ -33,7 +38,7 @@ public class DriverService(IDriverRepository driverRepository) : IDriverService
 
         if (driver == null)
         {
-            return;
+            throw new TmsException("Cannot delete: driver not found", HttpStatusCode.NotFound);
         }
 
         await driverRepository.DeleteAsync(driver, cancellationToken);
@@ -42,6 +47,12 @@ public class DriverService(IDriverRepository driverRepository) : IDriverService
     /// <inheritdoc/>
     public async Task<Driver> UpdateAsync(Driver driver, CancellationToken cancellationToken = default)
     {
+        var exists = await driverRepository.GetByIdAsync(driver.Id, cancellationToken);
+        if (exists == null)
+        {
+            throw new TmsException("Cannot update: driver not found", HttpStatusCode.NotFound);
+        }
+
         return await driverRepository.UpdateAsync(driver, cancellationToken);
     }
 
@@ -52,7 +63,7 @@ public class DriverService(IDriverRepository driverRepository) : IDriverService
 
         if (driver == null)
         {
-            return null;
+            throw new TmsException($"Profile for email {email} not found", HttpStatusCode.NotFound);
         }
 
         return new DriverProfileDto
@@ -62,7 +73,8 @@ public class DriverService(IDriverRepository driverRepository) : IDriverService
             LastName = driver.User.LastName,
             Email = driver.User.Email!,
             PhoneNumber = driver.User.PhoneNumber,
-            LastLocation = driver.DriverLocations.FirstOrDefault()?.Location,
+            LastLocation = driver.DriverLocations
+                .FirstOrDefault()?.Location,
             RegistrationDate = driver.User.RegistrationDate,
         };
     }

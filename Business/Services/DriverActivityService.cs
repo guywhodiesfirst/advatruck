@@ -1,6 +1,8 @@
 namespace Business.Services;
 
+using System.Net;
 using Business.Interfaces;
+using Core.Exceptions;
 using Data.Interfaces;
 
 /// <inheritdoc/>
@@ -12,27 +14,34 @@ public class DriverActivityService(
     /// <inheritdoc/>
     public async Task<List<Guid>> GetInactiveDriversAsync(CancellationToken cancellationToken)
     {
-        var now = DateTime.UtcNow;
-        var activeDrivers = await repo.GetAllInTripAsync(cancellationToken);
-
-        var result = new List<Guid>();
-
-        foreach (var d in activeDrivers)
+        try
         {
-            var last = await sessions.GetLastLocationUpdateAsync(d.Id);
+            var now = DateTime.UtcNow;
+            var activeDrivers = await repo.GetAllInTripAsync(cancellationToken);
 
-            if (last == null)
+            var result = new List<Guid>();
+
+            foreach (var d in activeDrivers)
             {
-                continue;
+                var last = await sessions.GetLastLocationUpdateAsync(d.Id);
+
+                if (last == null)
+                {
+                    continue;
+                }
+
+                // TODO: replace hardcoded value with options
+                if (now - last > TimeSpan.FromMinutes(15))
+                {
+                    result.Add(d.Id);
+                }
             }
 
-            // TODO: replace hardcoded value with options
-            if (now - last > TimeSpan.FromMinutes(15))
-            {
-                result.Add(d.Id);
-            }
+            return result;
         }
-
-        return result;
+        catch (Exception ex)
+        {
+            throw new TmsException("Failed to retrieve inactive drivers list", ex, HttpStatusCode.InternalServerError);
+        }
     }
 }

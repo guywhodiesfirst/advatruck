@@ -2,7 +2,9 @@ namespace Bot.Services;
 
 using System.Net.Http.Headers;
 using System.Net.Http.Json;
+using System.Text.Json;
 using Bot.Interfaces;
+using Core.Exceptions;
 using Core.Models;
 using Core.Types;
 using Microsoft.Extensions.Options;
@@ -25,7 +27,7 @@ public class ApiClient(
 
         if (!response.IsSuccessStatusCode)
         {
-            return null;
+            await HandleErrorResponse(response);
         }
 
         return await response.Content.ReadFromJsonAsync<AuthResponseDto>();
@@ -41,12 +43,10 @@ public class ApiClient(
 
         if (!response.IsSuccessStatusCode)
         {
-            return null;
+            await HandleErrorResponse(response);
         }
 
-        var content = await response.Content.ReadFromJsonAsync<DriverProfileDto>();
-
-        return content;
+        return await response.Content.ReadFromJsonAsync<DriverProfileDto>();
     }
 
     /// <inheritdoc/>
@@ -66,6 +66,32 @@ public class ApiClient(
         request.Headers.Authorization = new AuthenticationHeaderValue("Bearer", token);
         request.Content = JsonContent.Create(dto);
 
-        await http.SendAsync(request);
+        var response = await http.SendAsync(request);
+
+        if (!response.IsSuccessStatusCode)
+        {
+            await HandleErrorResponse(response);
+        }
+    }
+
+    /// <summary>
+    /// Parses error response and throws exception.
+    /// </summary>
+    /// <param name="response">Error response.</param>
+    /// <exception cref="TmsException">TMS Exception.</exception>
+    private static async Task HandleErrorResponse(HttpResponseMessage response)
+    {
+        string errorMessage;
+        try
+        {
+            var errorData = await response.Content.ReadFromJsonAsync<JsonElement>();
+            errorMessage = errorData.GetProperty("error").GetString() ?? "Unknown API Error";
+        }
+        catch
+        {
+            errorMessage = $"API Error: {response.StatusCode}";
+        }
+
+        throw new TmsException(errorMessage, response.StatusCode);
     }
 }

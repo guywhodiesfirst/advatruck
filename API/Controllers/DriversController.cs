@@ -1,8 +1,10 @@
 namespace API.Controllers;
 
+using System.Net;
 using System.Security.Claims;
 using Asp.Versioning;
 using Business.Interfaces;
+using Core.Exceptions;
 using Core.Models;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
@@ -17,17 +19,13 @@ public class DriversController(IDriverService driverService) : ControllerBase
     public async Task<ActionResult<DriverProfileDto>> GetProfile(CancellationToken cancellationToken)
     {
         var email = User.FindFirstValue(ClaimTypes.Email);
+
         if (string.IsNullOrEmpty(email))
         {
-            return Unauthorized();
+            throw new TmsException("User email claim not found in token", HttpStatusCode.Unauthorized);
         }
 
         var profile = await driverService.GetProfileByEmailAsync(email, cancellationToken);
-
-        if (profile == null)
-        {
-            return NotFound("Driver profile not found");
-        }
 
         return Ok(profile);
     }

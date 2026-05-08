@@ -21,25 +21,40 @@ public class DriverEventConsumer(
     ILogger<DriverEventConsumer> logger)
     : BackgroundService
 {
+    private const string QueueName = "driver.inactive";
     private IModel? _channel;
 
     public override Task StartAsync(CancellationToken cancellationToken)
     {
-        _channel = connection.CreateModel();
+        try
+        {
+            _channel = connection.CreateModel();
 
-        _channel.QueueDeclare(
-            queue: "driver.inactive",
-            durable: true,
-            exclusive: false,
-            autoDelete: false);
+            _channel.QueueDeclare(
+                queue: QueueName,
+                durable: true,
+                exclusive: false,
+                autoDelete: false);
 
-        _channel.BasicQos(0, 10, false);
+            _channel.BasicQos(0, 10, false);
+
+            logger.LogInformation("RabbitMQ Consumer started. Listening on queue: {Queue}", QueueName);
+        }
+        catch (Exception ex)
+        {
+            logger.LogCritical(ex, "Failed to initialize RabbitMQ channel");
+        }
 
         return base.StartAsync(cancellationToken);
     }
 
     protected override Task ExecuteAsync(CancellationToken cancellationToken)
     {
+        if (_channel == null)
+        {
+            return Task.CompletedTask;
+        }
+
         var consumer = new EventingBasicConsumer(_channel);
 
         consumer.Received += async (_, ea) =>
@@ -47,8 +62,8 @@ public class DriverEventConsumer(
             await HandleMessage(ea, cancellationToken);
         };
 
-        _channel!.BasicConsume(
-            queue: "driver.inactive",
+        _channel.BasicConsume(
+            queue: QueueName,
             autoAck: false,
             consumer: consumer);
 
@@ -59,6 +74,7 @@ public class DriverEventConsumer(
         BasicDeliverEventArgs eventArgs,
         CancellationToken cancellationToken)
     {
+        Guid? currentDriverId = null;
         try
         {
             var body = eventArgs.Body.ToArray();
@@ -71,8 +87,9 @@ public class DriverEventConsumer(
                 return;
             }
 
-            var isTracking = await sessions.IsTrackingActiveAsync(msg.DriverId);
+            currentDriverId = msg.DriverId;
 
+            var isTracking = await sessions.IsTrackingActiveAsync(msg.DriverId);
             if (!isTracking)
             {
                 _channel!.BasicAck(eventArgs.DeliveryTag, false);
@@ -80,7 +97,6 @@ public class DriverEventConsumer(
             }
 
             var lastStop = await sessions.GetTrackingStoppedAtAsync(msg.DriverId);
-
             if (lastStop != null && DateTime.UtcNow - lastStop < TimeSpan.FromMinutes(5))
             {
                 _channel!.BasicAck(eventArgs.DeliveryTag, false);
@@ -88,24 +104,23 @@ public class DriverEventConsumer(
             }
 
             var chatId = await sessions.GetChatIdByDriverIdAsync(msg.DriverId);
-
             if (chatId != null)
             {
                 await tracking.StopTrackingAsync(chatId.Value);
 
                 await bot.SendMessage(
                     chatId.Value,
-                    "⚠️ Трансляція геолокації перервалася.\n\nБудь ласка, увімкніть її знову, щоб залишатися на зв'язку 📡",
+                    "⚠️ Твою геолокацію втрачено.\n\nБудь ласка, перевір з'єднання та увімкни трансляцію знову 🛰",
                     cancellationToken: cancellationToken);
 
-                await sessions.SaveTrackingStoppedAtAsync(msg.DriverId, DateTime.UtcNow);
+                logger.LogInformation("Inactivity notification sent to driver {DriverId}", msg.DriverId);
             }
 
             _channel!.BasicAck(eventArgs.DeliveryTag, false);
         }
         catch (Exception ex)
         {
-            logger.LogError(ex, "Помилка при обробці повідомлення про неактивність водія {DriverId}", eventArgs.RoutingKey);
+            logger.LogError(ex, "Error processing inactivity message for driver {DriverId}", currentDriverId);
             _channel!.BasicNack(eventArgs.DeliveryTag, false, true);
         }
     }

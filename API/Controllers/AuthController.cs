@@ -1,8 +1,10 @@
 namespace API.Controllers;
 
+using System.Net;
 using Asp.Versioning;
 using Business.Interfaces;
 using Core.Entities;
+using Core.Exceptions;
 using Core.Identity;
 using Core.Models;
 using Microsoft.AspNetCore.Identity;
@@ -21,7 +23,7 @@ public class AuthController(
     {
         if (await userManager.FindByEmailAsync(dto.Email) != null)
         {
-            return BadRequest("Email is taken");
+            throw new TmsException("Email is already taken", HttpStatusCode.BadRequest);
         }
 
         var user = new AppUser
@@ -42,21 +44,22 @@ public class AuthController(
         }
         else
         {
-            return BadRequest("Invalid role. Use 'Driver' or 'Dispatcher'");
+            throw new TmsException("Invalid role. Use 'Driver' or 'Dispatcher'", HttpStatusCode.BadRequest);
         }
 
         var result = await userManager.CreateAsync(user, dto.Password);
 
         if (!result.Succeeded)
         {
-            return BadRequest(result.Errors);
+            var errorDetails = string.Join(", ", result.Errors.Select(e => e.Description));
+            throw new TmsException($"Registration failed: {errorDetails}", HttpStatusCode.BadRequest);
         }
 
         var entityId = user.Driver?.Id ?? user.Dispatcher?.Id ?? user.Id;
 
-        return new AuthResponseDto(
+        return Ok(new AuthResponseDto(
             entityId,
-            tokenService.CreateToken(user, dto.Role));
+            tokenService.CreateToken(user, dto.Role)));
     }
 
     [HttpPost("login")]
@@ -69,22 +72,21 @@ public class AuthController(
 
         if (user == null)
         {
-            return Unauthorized("Invalid email or password");
+            throw new TmsException("Invalid email or password", HttpStatusCode.Unauthorized);
         }
 
         var result = await userManager.CheckPasswordAsync(user, dto.Password);
 
         if (!result)
         {
-            return Unauthorized();
+            throw new TmsException("Invalid email or password", HttpStatusCode.Unauthorized);
         }
 
         var role = user.Driver != null ? "Driver" : "Dispatcher";
-
         var entityId = user.Driver?.Id ?? user.Dispatcher?.Id ?? user.Id;
 
-        return new AuthResponseDto(
+        return Ok(new AuthResponseDto(
             entityId,
-            tokenService.CreateToken(user, role));
+            tokenService.CreateToken(user, role)));
     }
 }
