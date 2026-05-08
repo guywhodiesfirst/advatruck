@@ -1,6 +1,7 @@
 namespace Business.Interfaces;
 
 using Core.Entities;
+using Core.Models;
 
 /// <summary>
 /// Service for managing driver business logic.
@@ -21,14 +22,6 @@ public interface IDriverService
     /// <param name="cancellationToken">Cancellation token.</param>
     /// <returns>Driver if found, otherwise null.</returns>
     Task<Driver?> GetByIdAsync(Guid id, CancellationToken cancellationToken = default);
-
-    /// <summary>
-    /// Login driver by email.
-    /// </summary>
-    /// <param name="email">Driver's email.</param>
-    /// <param name="cancellationToken">Cancellation token.</param>
-    /// <returns>Driver if found, otherwise null.</returns>
-    Task<Driver?> LoginAsync(string email, CancellationToken cancellationToken = default);
 
     /// <summary>
     /// Create a new driver.
@@ -53,4 +46,12 @@ public interface IDriverService
     /// <param name="cancellationToken">Cancellation token.</param>
     /// <returns>Updated driver.</returns>
     Task<Driver> UpdateAsync(Driver driver, CancellationToken cancellationToken = default);
+
+    /// <summary>
+    /// Retrieves full driver information.
+    /// </summary>
+    /// <param name="email">Driver's email address.</param>
+    /// <param name="cancellationToken">Cancellation token.</param>
+    /// <returns>Driver profile.</returns>
+    Task<DriverProfileDto?> GetProfileByEmailAsync(string email, CancellationToken cancellationToken = default);
 }

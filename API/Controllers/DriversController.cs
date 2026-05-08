@@ -1,8 +1,10 @@
 namespace API.Controllers;
 
+using System.Security.Claims;
 using Asp.Versioning;
 using Business.Interfaces;
 using Core.Models;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 
 [ApiController]
@@ -10,16 +12,23 @@ using Microsoft.AspNetCore.Mvc;
 [ApiVersion(TmsApiVersion.V1)]
 public class DriversController(IDriverService driverService) : ControllerBase
 {
-    [HttpPost("login")]
-    public async Task<IActionResult> Login([FromBody] LoginRequestDto request)
+    [Authorize(Roles = "Driver")]
+    [HttpGet("me")]
+    public async Task<ActionResult<DriverProfileDto>> GetProfile(CancellationToken cancellationToken)
     {
-        var driver = await driverService.LoginAsync(request.Email);
-
-        if (driver == null)
+        var email = User.FindFirstValue(ClaimTypes.Email);
+        if (string.IsNullOrEmpty(email))
         {
             return Unauthorized();
         }
 
-        return Ok(driver);
+        var profile = await driverService.GetProfileByEmailAsync(email, cancellationToken);
+
+        if (profile == null)
+        {
+            return NotFound("Driver profile not found");
+        }
+
+        return Ok(profile);
     }
 }

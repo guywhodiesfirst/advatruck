@@ -1,6 +1,7 @@
 namespace Bot.Handlers;
 
 using Bot.Interfaces;
+using Bot.UI;
 using Data.Interfaces;
 using Telegram.Bot.Types;
 
@@ -34,11 +35,41 @@ public class UpdateHandler(
             return;
         }
 
+        if (text is "/start" or BotButtons.Login)
+        {
+            await sessions.ClearAwaitingEmailAsync(chatId);
+            await sessions.ClearAwaitingPasswordAsync(chatId);
+        }
+
         if (await sessions.IsAwaitingEmailAsync(chatId))
         {
-            await auth.HandleLoginAsync(chatId, text);
             await sessions.ClearAwaitingEmailAsync(chatId);
+            await sessions.MarkAwaitingPasswordAsync(chatId, text);
+            await commands.SendPasswordPromptAsync(chatId);
             return;
+        }
+
+        var pwState = await sessions.GetAwaitingPasswordStateAsync(chatId);
+        if (pwState.IsAwaiting && !string.IsNullOrEmpty(pwState.Email))
+        {
+            var actualState = await sessions.GetAwaitingPasswordStateAsync(chatId);
+            if (actualState.IsAwaiting)
+            {
+                await auth.HandleLoginAsync(chatId, pwState.Email, text);
+                return;
+            }
+        }
+
+        if (text != "/start" && text != BotButtons.Login)
+        {
+            var isAuthenticated = await auth.IsAuthenticatedAsync(chatId);
+            if (!isAuthenticated)
+            {
+                await sessions.ClearSessionAsync(chatId);
+                await commands.SendAuthenticationFailedAsync(chatId);
+                await commands.HandleAsync(chatId, "/start");
+                return;
+            }
         }
 
         await commands.HandleAsync(chatId, text);

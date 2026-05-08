@@ -1,6 +1,7 @@
 namespace Bot.Services;
 
 using Bot.Interfaces;
+using Bot.UI;
 using Data.Interfaces;
 using Telegram.Bot;
 using Telegram.Bot.Types.ReplyMarkups;
@@ -8,6 +9,7 @@ using Telegram.Bot.Types.ReplyMarkups;
 /// <inheritdoc/>
 public class CommandService(
     ITelegramBotClient bot,
+    IAuthService auth,
     IDriverSessionStore sessions)
     : ICommandService
 {
@@ -16,31 +18,50 @@ public class CommandService(
         switch (text)
         {
             case "/start":
-                await bot.SendMessage(chatId, "👋 Старт");
+                await bot.SendMessage(
+                    chatId,
+                    "👋 Вітаю, водію!\nНатисни 'Увійти', щоб почати авторизацію",
+                    replyMarkup: KeyboardLayout.StartKeyboard);
                 return;
 
             case BotButtons.Login:
+                if (await auth.IsAuthenticatedAsync(chatId))
+                {
+                    await bot.SendMessage(chatId, "✅ Ви вже в системі!", replyMarkup: KeyboardLayout.MainKeyboard);
+                    return;
+                }
+
                 await sessions.MarkAwaitingEmailAsync(chatId);
+
                 await bot.SendMessage(
                     chatId,
                     "Введи email:",
-                    replyMarkup: GetStartKeyboard());
+                    replyMarkup: new ReplyKeyboardRemove());
+                return;
+
+            case BotButtons.Logout:
+                if (await auth.IsAuthenticatedAsync(chatId))
+                {
+                    await auth.HandleLogoutAsync(chatId);
+                    await HandleAsync(chatId, "/start");
+                    return;
+                }
+
+                await bot.SendMessage(chatId, "Ви не увійшли у систему!", replyMarkup: KeyboardLayout.StartKeyboard);
                 return;
 
             case BotButtons.StartTrip:
                 await bot.SendMessage(
                     chatId,
                     "🚀 Рейс розпочато",
-                    replyMarkup: GetMainKeyboard());
+                    replyMarkup: KeyboardLayout.MainKeyboard);
                 return;
 
             case BotButtons.EndTrip:
-                await sessions.ClearAuthenticatedDriverAsync(chatId);
-                await sessions.ClearTrackingAsync(chatId);
                 await bot.SendMessage(
                     chatId,
                     "✅ Рейс завершено",
-                    replyMarkup: GetMainKeyboard());
+                    replyMarkup: KeyboardLayout.MainKeyboard);
                 return;
 
             case BotButtons.StartTracking:
@@ -51,26 +72,14 @@ public class CommandService(
                       "2️⃣ Обери 'Місце'\n" +
                       "3️⃣ Натисни \"Поділитися моїм маячком на мапі\"\n\n" +
                       "Бот буде отримувати оновлення автоматично 🚀",
-                    replyMarkup: GetMainKeyboard());
+                    replyMarkup: KeyboardLayout.MainKeyboard);
                 return;
 
             default:
-                await bot.SendMessage(chatId, "Використай кнопки 👇");
+                await bot.SendMessage(chatId, "Використай кнопки 👇", replyMarkup: KeyboardLayout.MainKeyboard);
                 return;
         }
     }
-
-    /// <summary>
-    /// Keyboard shown before authentication.
-    /// </summary>
-    /// <returns>A <see cref="ReplyKeyboardMarkup"/> with login button.</returns>
-    private static ReplyKeyboardMarkup GetStartKeyboard() => new(
-    [
-        [new KeyboardButton(BotButtons.Login)]
-    ])
-    {
-        ResizeKeyboard = true,
-    };
 
     /// <inheritdoc/>
     public async Task SendLoginPromptAsync(long chatId, string text)
@@ -80,30 +89,20 @@ public class CommandService(
         await bot.SendMessage(
             chatId,
             text,
-            replyMarkup: GetStartKeyboard());
+            replyMarkup: new ReplyKeyboardRemove());
     }
 
     /// <inheritdoc/>
-    public async Task SendGreetingAsync(long chatId, string name)
+    public async Task SendPasswordPromptAsync(long chatId)
     {
         await bot.SendMessage(
             chatId,
-            $"✅ Вітаю, {name}",
-            replyMarkup: GetMainKeyboard());
+            "🔑 Email прийнято. Тепер введи пароль:",
+            replyMarkup: new ReplyKeyboardRemove());
     }
 
-    /// <summary>
-    /// Main keyboard shown after authentication.
-    /// </summary>
-    /// <returns>A <see cref="ReplyKeyboardMarkup"/> with main action buttons.</returns>
-    private static ReplyKeyboardMarkup GetMainKeyboard() => new(
-    [
-        [KeyboardButton.WithRequestLocation(BotButtons.SendLocation)],
-        [new KeyboardButton(BotButtons.StartTracking)],
-        [new KeyboardButton(BotButtons.StartTrip)],
-        [new KeyboardButton(BotButtons.EndTrip)]
-    ])
+    public async Task SendAuthenticationFailedAsync(long chatId)
     {
-        ResizeKeyboard = true,
-    };
+        await bot.SendMessage(chatId, "🔐 Сесія вичерпана або ви не авторизовані.");
+    }
 }

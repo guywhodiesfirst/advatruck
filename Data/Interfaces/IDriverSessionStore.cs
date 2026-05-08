@@ -1,33 +1,48 @@
 namespace Data.Interfaces;
 
+using Core.Models;
+
 /// <summary>
 /// Provides access to driver session storage.
-/// Handles both authentication state and login flow state
-/// associated with a Telegram chat.
 /// </summary>
 public interface IDriverSessionStore
 {
     /// <summary>
-    /// Stores authenticated driver session for the specified chat.
+    /// Creates a bidirectional binding between Telegram chat, driver ID and their JWT token.
     /// </summary>
     /// <param name="chatId">Telegram chat ID.</param>
     /// <param name="driverId">Authenticated driver ID.</param>
+    /// <param name="token">JWT access token for API calls.</param>
     /// <returns>A <see cref="Task"/> representing the asynchronous operation.</returns>
-    Task SaveAuthenticatedDriverAsync(long chatId, Guid driverId);
+    Task SaveBindingAsync(long chatId, Guid driverId, string token);
 
     /// <summary>
-    /// Retrieves authenticated driver session for the specified chat.
+    /// Retrieves authenticated driver ID for the specified chat.
     /// </summary>
     /// <param name="chatId">Telegram chat ID.</param>
     /// <returns>Driver ID if session exists; otherwise null.</returns>
-    Task<Guid?> GetAuthenticatedDriverAsync(long chatId);
+    Task<Guid?> GetDriverIdByChatIdAsync(long chatId);
 
     /// <summary>
-    /// Removes authenticated driver session for the specified chat.
+    /// Retrieves the JWT access token for a specific driver.
+    /// </summary>
+    /// <param name="driverId">Driver identifier.</param>
+    /// <returns>JWT token if exists; otherwise null.</returns>
+    Task<string?> GetTokenByDriverIdAsync(Guid driverId);
+
+    /// <summary>
+    /// Retrieves Telegram chatId for a given driverId.
+    /// </summary>
+    /// <param name="driverId">Driver identifier.</param>
+    /// <returns>ChatId.</returns>
+    Task<long?> GetChatIdByDriverIdAsync(Guid driverId);
+
+    /// <summary>
+    /// Removes all session data (token, mappings, states) associated with the chat.
     /// </summary>
     /// <param name="chatId">Telegram chat ID.</param>
     /// <returns>A <see cref="Task"/> representing the asynchronous operation.</returns>
-    Task ClearAuthenticatedDriverAsync(long chatId);
+    Task ClearSessionAsync(long chatId);
 
     /// <summary>
     /// Marks that the user has started login process and is expected to send email.
@@ -40,7 +55,7 @@ public interface IDriverSessionStore
     /// Checks whether the user is currently in the login (awaiting email) state.
     /// </summary>
     /// <param name="chatId">Telegram chat ID.</param>
-    /// <returns>A <see cref="Task"/> representing the asynchronous operation.</returns>
+    /// <returns>A bool indicating the state.</returns>
     Task<bool> IsAwaitingEmailAsync(long chatId);
 
     /// <summary>
@@ -51,44 +66,43 @@ public interface IDriverSessionStore
     Task ClearAwaitingEmailAsync(long chatId);
 
     /// <summary>
-    /// Saves the message ID of the tracking status message for a specific chat.
-    /// This message will be updated instead of sending new messages on each location update.
+    /// Marks that live tracking is currently active for the driver.
     /// </summary>
-    /// <param name="chatId">Telegram chat ID.</param>
+    /// <param name="driverId">Driver identifier.</param>
+    /// <returns>A <see cref="Task"/> representing the asynchronous operation.</returns>
+    Task SetTrackingActiveAsync(Guid driverId);
+
+    /// <summary>
+    /// Checks whether live tracking is active for the driver.
+    /// </summary>
+    /// <param name="driverId">Driver identifier.</param>
+    /// <returns>A bool indicating the state.</returns>
+    Task<bool> IsTrackingActiveAsync(Guid driverId);
+
+    /// <summary>
+    /// Saves the message ID of the tracking status message for a specific driver.
+    /// </summary>
+    /// <param name="driverId">Driver identifier.</param>
     /// <param name="messageId">Telegram message ID to save.</param>
     /// <returns>A <see cref="Task"/> representing the asynchronous operation.</returns>
-    Task SaveTrackingMessageIdAsync(long chatId, int messageId);
+    Task SaveTrackingMessageIdAsync(Guid driverId, int messageId);
 
     /// <summary>
-    /// Retrieves the message ID of the tracking status message for a specific chat.
+    /// Retrieves the message ID of the tracking status message for a specific driver.
     /// </summary>
-    /// <param name="chatId">Telegram chat ID.</param>
+    /// <param name="driverId">Driver identifier.</param>
     /// <returns>The message ID if exists; otherwise null.</returns>
-    Task<int?> GetTrackingMessageIdAsync(long chatId);
+    Task<int?> GetTrackingMessageIdAsync(Guid driverId);
 
     /// <summary>
-    /// Marks that live tracking is currently active.
+    /// Clears tracking state and message ID for the driver.
     /// </summary>
-    /// <param name="chatId">Telegram chat ID.</param>
+    /// <param name="driverId">Driver identifier.</param>
     /// <returns>A <see cref="Task"/> representing the asynchronous operation.</returns>
-    Task SetTrackingActiveAsync(long chatId);
+    Task ClearTrackingAsync(Guid driverId);
 
     /// <summary>
-    /// Checks whether live tracking is active.
-    /// </summary>
-    /// <param name="chatId">Telegram chat ID.</param>
-    /// <returns>A <see cref="Task"/> representing the asynchronous operation.</returns>
-    Task<bool> IsTrackingActiveAsync(long chatId);
-
-    /// <summary>
-    /// Clears tracking state.
-    /// </summary>
-    /// <param name="chatId">Telegram chat ID.</param>
-    /// <returns>A <see cref="Task"/> representing the asynchronous operation.</returns>
-    Task ClearTrackingAsync(long chatId);
-
-    /// <summary>
-    /// Saves timestamp of the last received location update for a driver session.
+    /// Saves timestamp of the last received location update for a driver.
     /// </summary>
     /// <param name="driverId">ID of the driver.</param>
     /// <param name="time">UTC timestamp of the last location update.</param>
@@ -96,41 +110,53 @@ public interface IDriverSessionStore
     Task SaveLastLocationUpdateAsync(Guid driverId, DateTime time);
 
     /// <summary>
-    /// Retrieves timestamp of the last received location update for a driver session.
+    /// Retrieves timestamp of the last received location update for a driver.
     /// </summary>
     /// <param name="driverId">ID of the driver.</param>
-    /// <returns>
-    /// A <see cref="Task"/> containing the last update timestamp if exists,
-    /// otherwise <see langword="null"/>.
-    /// </returns>
+    /// <returns>The last update timestamp if exists; otherwise null.</returns>
     Task<DateTime?> GetLastLocationUpdateAsync(Guid driverId);
 
     /// <summary>
-    /// Retrieves Telegram chatId for a given driverId.
+    /// Saves timestamp when tracking was stopped for a specific driver.
     /// </summary>
     /// <param name="driverId">Driver identifier.</param>
-    /// <returns>ChatId.</returns>
-    Task<long?> GetChatIdByDriverIdAsync(Guid driverId);
-
-    /// <summary>
-    /// Saves timestamp when tracking was stopped for a specific chat session.
-    /// </summary>
-    /// <param name="chatId">Telegram chat ID.</param>
     /// <param name="time">UTC timestamp when tracking was stopped.</param>
     /// <returns>A <see cref="Task"/> representing the asynchronous operation.</returns>
-    Task SaveTrackingStoppedAtAsync(long chatId, DateTime time);
+    Task SaveTrackingStoppedAtAsync(Guid driverId, DateTime time);
 
     /// <summary>
-    /// Retrieves timestamp when tracking was last stopped for a specific chat session.
+    /// Retrieves timestamp when tracking was last stopped for a specific driver.
     /// </summary>
-    /// <param name="chatId">Telegram chat ID.</param>
+    /// <param name="driverId">Driver identifier.</param>
     /// <returns>Timestamp of the last time when tracking stopped.</returns>
-    Task<DateTime?> GetTrackingStoppedAtAsync(long chatId);
+    Task<DateTime?> GetTrackingStoppedAtAsync(Guid driverId);
 
     /// <summary>
     /// Clears driver TrackingStoppedAt timestamp.
     /// </summary>
+    /// <param name="driverId">Driver identifier.</param>
+    /// <returns>A <see cref="Task"/> representing the asynchronous operation.</returns>
+    Task ClearTrackingStoppedAtAsync(Guid driverId);
+
+    /// <summary>
+    /// Marks that the user is expected to send password.
+    /// </summary>
+    /// <param name="chatId">Telegram chat ID.</param>
+    /// <param name="email">Driver's email.</param>
+    /// <returns>A <see cref="Task"/> representing the asynchronous operation.</returns>
+    Task MarkAwaitingPasswordAsync(long chatId, string email);
+
+    /// <summary>
+    /// Retrieves password await state.
+    /// </summary>
+    /// <param name="chatId">Telegram chat ID.</param>
+    /// <returns>Password await state.</returns>
+    Task<PasswordAwaitState> GetAwaitingPasswordStateAsync(long chatId);
+
+    /// <summary>
+    /// Clears awaiting password.
+    /// </summary>
     /// <param name="chatId">Telegram chat ID.</param>
     /// <returns>A <see cref="Task"/> representing the asynchronous operation.</returns>
-    Task ClearTrackingStoppedAtAsync(long chatId);
+    Task ClearAwaitingPasswordAsync(long chatId);
 }

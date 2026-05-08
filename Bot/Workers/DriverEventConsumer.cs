@@ -5,15 +5,20 @@ using System.Text.Json;
 using Bot.Interfaces;
 using Data.Interfaces;
 using Microsoft.Extensions.Hosting;
+using Microsoft.Extensions.Logging;
 using RabbitMQ.Client;
 using RabbitMQ.Client.Events;
 using Telegram.Bot;
 
+/// <summary>
+/// Consumes events from RabbitMQ regarding driver inactivity and notifies them via Telegram.
+/// </summary>
 public class DriverEventConsumer(
     IConnection connection,
     ITrackingService tracking,
     ITelegramBotClient bot,
-    IDriverSessionStore sessions)
+    IDriverSessionStore sessions,
+    ILogger<DriverEventConsumer> logger)
     : BackgroundService
 {
     private IModel? _channel;
@@ -56,8 +61,9 @@ public class DriverEventConsumer(
     {
         try
         {
-            var msg = JsonSerializer.Deserialize<DriverInactiveMessage>(
-                Encoding.UTF8.GetString(eventArgs.Body.ToArray()));
+            var body = eventArgs.Body.ToArray();
+            var messageJson = Encoding.UTF8.GetString(body);
+            var msg = JsonSerializer.Deserialize<DriverInactiveMessage>(messageJson);
 
             if (msg == null)
             {
@@ -65,15 +71,7 @@ public class DriverEventConsumer(
                 return;
             }
 
-            var chatId = await sessions.GetChatIdByDriverIdAsync(msg.DriverId);
-
-            if (chatId == null)
-            {
-                _channel!.BasicAck(eventArgs.DeliveryTag, false);
-                return;
-            }
-
-            var isTracking = await sessions.IsTrackingActiveAsync(chatId.Value);
+            var isTracking = await sessions.IsTrackingActiveAsync(msg.DriverId);
 
             if (!isTracking)
             {
@@ -81,28 +79,33 @@ public class DriverEventConsumer(
                 return;
             }
 
-            var lastStop = await sessions.GetTrackingStoppedAtAsync(chatId.Value);
+            var lastStop = await sessions.GetTrackingStoppedAtAsync(msg.DriverId);
 
-            if (lastStop != null &&
-                DateTime.UtcNow - lastStop < TimeSpan.FromMinutes(5))
+            if (lastStop != null && DateTime.UtcNow - lastStop < TimeSpan.FromMinutes(5))
             {
                 _channel!.BasicAck(eventArgs.DeliveryTag, false);
                 return;
             }
 
-            await tracking.StopTrackingAsync(chatId.Value);
+            var chatId = await sessions.GetChatIdByDriverIdAsync(msg.DriverId);
 
-            await bot.SendMessage(
-                chatId.Value,
-                "⚠️ Схоже, що трекінг зупинився.\n\nБудь ласка, увімкніть геолокацію",
-                cancellationToken: cancellationToken);
+            if (chatId != null)
+            {
+                await tracking.StopTrackingAsync(chatId.Value);
 
-            await sessions.SaveTrackingStoppedAtAsync(chatId.Value, DateTime.UtcNow);
+                await bot.SendMessage(
+                    chatId.Value,
+                    "⚠️ Трансляція геолокації перервалася.\n\nБудь ласка, увімкніть її знову, щоб залишатися на зв'язку 📡",
+                    cancellationToken: cancellationToken);
+
+                await sessions.SaveTrackingStoppedAtAsync(msg.DriverId, DateTime.UtcNow);
+            }
 
             _channel!.BasicAck(eventArgs.DeliveryTag, false);
         }
-        catch
+        catch (Exception ex)
         {
+            logger.LogError(ex, "Помилка при обробці повідомлення про неактивність водія {DriverId}", eventArgs.RoutingKey);
             _channel!.BasicNack(eventArgs.DeliveryTag, false, true);
         }
     }

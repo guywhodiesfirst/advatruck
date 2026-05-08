@@ -46,27 +46,28 @@ try
             o => o.LocationUpdateIntervalMinutes > 0,
             $"{nameof(TelegramBotOptions.LocationUpdateIntervalMinutes)} is required");
 
-    builder.Services.AddSingleton<IConnection>(sp =>
+    builder.Services.AddSingleton<IConnection>(_ =>
     {
         var factory = new ConnectionFactory
         {
-            HostName = "localhost",
-            UserName = "admin",
-            Password = "admin",
-            Port = 5672,
+            HostName = builder.Configuration["RabbitMq:HostName"] ?? "localhost",
+            UserName = builder.Configuration["RabbitMq:UserName"] ?? "admin",
+            Password = builder.Configuration["RabbitMq:Password"] ?? "admin",
+            Port = int.TryParse(builder.Configuration["RabbitMq:Port"], out var port) ? port : 5672,
         };
 
         return factory.CreateConnection();
     });
+
     var opts = new TelegramBotOptions();
     builder.Configuration.Bind(TelegramBotOptions.ConfigurationSection, opts);
 
-    // Telegram client
     builder.Services.AddSingleton<ITelegramBotClient>(
         _ => new TelegramBotClient(opts.TelegramToken));
 
     builder.Services.AddSingleton<IConnectionMultiplexer>(
-        ConnectionMultiplexer.Connect(opts.RedisConnectionString));
+        ConnectionMultiplexer.Connect(builder.Configuration.GetConnectionString("Redis")
+        ?? "localhost:6379"));
 
     builder.Services.AddSingleton<IDriverSessionStore, DriverSessionStore>();
     builder.Services.AddSingleton<IAuthService, AuthService>();
@@ -74,7 +75,7 @@ try
     builder.Services.AddSingleton<ITrackingService, TrackingService>();
 
     builder.Services.AddHttpClient();
-    builder.Services.AddSingleton<DriverApiClient>();
+    builder.Services.AddSingleton<IApiClient, ApiClient>();
     builder.Services.AddSingleton<UpdateHandler>();
 
     builder.Services.AddHostedService<DriverEventConsumer>();

@@ -25,21 +25,26 @@ public class DriverRepository(TmsDataContext context) : IDriverRepository
     public async Task<Driver?> GetByIdAsync(Guid id, CancellationToken cancellationToken = default)
     {
         return await context.Drivers
-            .Include(d => d.DriverLocations)
+            .Include(d => d.DriverLocations
+                .OrderByDescending(dl => dl.UpdateTime))
+            .Include(d => d.User)
+            .Include(d => d.Loads)
             .FirstOrDefaultAsync(d => d.Id == id, cancellationToken);
     }
 
     public async Task<Driver?> GetByEmailAsync(string email, CancellationToken cancellationToken = default)
     {
         return await context.Drivers
-            .Include(d => d.DriverLocations)
-            .FirstOrDefaultAsync(d => d.Email == email, cancellationToken);
+            .Include(d => d.DriverLocations
+                .OrderByDescending(dl => dl.UpdateTime))
+            .Include(d => d.User)
+            .Include(d => d.Loads)
+            .FirstOrDefaultAsync(d => d.User.Email == email, cancellationToken);
     }
 
     /// <inheritdoc/>
     public async Task<Guid> AddAsync(Driver driver, CancellationToken cancellationToken = default)
     {
-        driver.RegistrationDate = DateTime.UtcNow;
         await context.Drivers.AddAsync(driver, cancellationToken);
         await context.SaveChangesAsync(cancellationToken);
         return driver.Id;

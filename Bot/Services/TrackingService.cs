@@ -2,18 +2,16 @@ namespace Bot.Services;
 
 using Bot.Interfaces;
 using Data.Interfaces;
+using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 using Telegram.Bot;
 using Telegram.Bot.Types;
 
-// TODO: refactor this class to separate responsibilities
-
 /// <inheritdoc/>
 public class TrackingService(
     ITelegramBotClient bot,
-    DriverApiClient api,
+    IApiClient api,
     IDriverSessionStore sessions,
-    ICommandService commands,
     IOptions<TelegramBotOptions> options,
     ILogger<TrackingService> logger)
     : ITrackingService
@@ -21,43 +19,53 @@ public class TrackingService(
     /// <inheritdoc/>
     public async Task HandleLocationAsync(long chatId, Location location)
     {
-        var driverId = await sessions.GetAuthenticatedDriverAsync(chatId);
-
+        var driverId = await sessions.GetDriverIdByChatIdAsync(chatId);
         if (driverId == null)
         {
-            await commands.SendLoginPromptAsync(chatId, "Спочатку увійди");
+            logger.LogWarning("Location update received for unauthenticated chat {ChatId}", chatId);
             return;
         }
 
         var now = DateTime.UtcNow;
-
         var lastUpdate = await sessions.GetLastLocationUpdateAsync(driverId.Value);
 
-        var shouldSendToApi =
-            lastUpdate == null ||
-            now - lastUpdate >= TimeSpan.FromMinutes(options.Value.LocationUpdateIntervalMinutes);
-
-        if (shouldSendToApi)
+        if (lastUpdate == null || now - lastUpdate >= TimeSpan.FromMinutes(options.Value.LocationUpdateIntervalMinutes))
         {
-            await sessions.SaveLastLocationUpdateAsync(driverId.Value, now);
-            await api.SendLocationAsync(driverId.Value, location);
-            await UpdateTrackingMessageAsync(chatId, now);
-        }
+            var token = await sessions.GetTokenByDriverIdAsync(driverId.Value);
+            if (string.IsNullOrEmpty(token))
+            {
+                logger.LogError("Token not found for driver {DriverId}", driverId);
+                return;
+            }
 
-        if (location.LivePeriod == null)
-        {
-            await bot.SendMessage(chatId, "📍 Локацію отримано");
+            try
+            {
+                await api.SendLocationAsync(driverId.Value, location, token);
+                await sessions.SaveLastLocationUpdateAsync(driverId.Value, now);
+
+                await UpdateTrackingStatusAsync(chatId, driverId.Value, now);
+            }
+            catch (Exception ex)
+            {
+                logger.LogError(ex, "Failed to send location for driver {DriverId}", driverId);
+            }
         }
     }
 
     /// <inheritdoc/>
     public async Task StopTrackingAsync(long chatId)
     {
+        var driverId = await sessions.GetDriverIdByChatIdAsync(chatId);
+        if (driverId == null)
+        {
+            return;
+        }
+
         var now = DateTime.UtcNow;
 
-        await sessions.SaveTrackingStoppedAtAsync(chatId, now);
+        await sessions.SaveTrackingStoppedAtAsync(driverId.Value, now);
 
-        var messageId = await sessions.GetTrackingMessageIdAsync(chatId);
+        var messageId = await sessions.GetTrackingMessageIdAsync(driverId.Value);
 
         if (messageId != null)
         {
@@ -68,27 +76,26 @@ public class TrackingService(
                     messageId.Value,
                     $"⛔ Трекінг зупинено\n🕒 {FormatTimestamp(now)}");
             }
-            catch
+            catch (Exception ex)
             {
-                logger.LogWarning("Failed to update stop tracking message {ChatId}", chatId);
+                logger.LogWarning(ex, "Failed to update stop tracking message for chat {ChatId}", chatId);
             }
         }
 
-        await sessions.ClearTrackingAsync(chatId);
+        await sessions.ClearTrackingAsync(driverId.Value);
     }
 
-    private async Task UpdateTrackingMessageAsync(long chatId, DateTime time)
+    private async Task UpdateTrackingStatusAsync(long chatId, Guid driverId, DateTime time)
     {
-        var isTracking = await sessions.IsTrackingActiveAsync(chatId);
+        var isTracking = await sessions.IsTrackingActiveAsync(driverId);
 
         if (!isTracking)
         {
-            await StartTrackingAsync(chatId);
+            await StartTrackingAsync(chatId, driverId);
             return;
         }
 
-        var messageId = await sessions.GetTrackingMessageIdAsync(chatId);
-
+        var messageId = await sessions.GetTrackingMessageIdAsync(driverId);
         if (messageId == null)
         {
             return;
@@ -101,23 +108,22 @@ public class TrackingService(
                 messageId.Value,
                 $"📡 Трекінг активний\n⏱ {FormatTimestamp(time)}");
         }
-        catch
+        catch (Exception ex)
         {
-            logger.LogWarning("Failed tracking update {ChatId}", chatId);
+            logger.LogDebug("Tracking message update skipped or failed for chat {ChatId}: {Msg}", chatId, ex.Message);
         }
     }
 
-    private async Task StartTrackingAsync(long chatId)
+    private async Task StartTrackingAsync(long chatId, Guid driverId)
     {
-        await sessions.ClearTrackingStoppedAtAsync(chatId);
-
-        await sessions.SetTrackingActiveAsync(chatId);
+        await sessions.ClearTrackingStoppedAtAsync(driverId);
+        await sessions.SetTrackingActiveAsync(driverId);
 
         var msg = await bot.SendMessage(
             chatId,
-            "📡 Трекінг активний\n🕒 —");
+            "📡 Трекінг активний\n🕒 Очікування оновлень...");
 
-        await sessions.SaveTrackingMessageIdAsync(chatId, msg.MessageId);
+        await sessions.SaveTrackingMessageIdAsync(driverId, msg.MessageId);
     }
 
     private static string FormatTimestamp(DateTime time)

@@ -1,6 +1,9 @@
 namespace Data;
 
 using Core.Entities;
+using Core.Identity;
+using Microsoft.AspNetCore.Identity;
+using Microsoft.AspNetCore.Identity.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore;
 
 /// <summary>
@@ -8,11 +11,17 @@ using Microsoft.EntityFrameworkCore;
 /// </summary>
 /// <param name="options">Data context options.</param>
 public class TmsDataContext(DbContextOptions<TmsDataContext> options)
-    : DbContext(options)
+    : IdentityDbContext<AppUser, IdentityRole<Guid>, Guid>(options)
 {
     public DbSet<Driver> Drivers { get; set; }
 
     public DbSet<DriverLocation> DriverLocations { get; set; }
+
+    public DbSet<LoadLocation> LoadLocations { get; set; }
+
+    public DbSet<Load> Loads { get; set; }
+
+    public DbSet<Dispatcher> Dispatchers { get; set; }
 
     /// <inheritdoc/>
     protected override void OnModelCreating(ModelBuilder modelBuilder)
@@ -31,6 +40,9 @@ public class TmsDataContext(DbContextOptions<TmsDataContext> options)
 
         modelBuilder.Entity<DriverLocation>()
             .HasIndex(d => d.DriverId);
+
+        modelBuilder.Entity<LoadLocation>()
+            .OwnsOne(l => l.Location);
 
         base.OnModelCreating(modelBuilder);
     }

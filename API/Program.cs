@@ -1,3 +1,5 @@
+using System.Security.Claims;
+using System.Text;
 using API;
 using API.Extensions;
 using API.Notifications;
@@ -5,12 +7,17 @@ using API.Workers;
 using Asp.Versioning;
 using Business.Interfaces;
 using Business.Services;
+using Core.Identity;
 using Data;
 using Data.Interfaces;
 using Data.Repositories;
 using Data.State;
+using Microsoft.AspNetCore.Authentication.JwtBearer;
+using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.IdentityModel.Tokens;
 using RabbitMQ.Client;
+using Scalar.AspNetCore;
 using Serilog;
 using StackExchange.Redis;
 
@@ -74,13 +81,39 @@ try
         options.UseNpgsql(
             builder.Configuration.GetConnectionString("DefaultConnection")));
 
+    builder.Services.AddIdentityCore<AppUser>(options =>
+        {
+            options.Password.RequireDigit = false;
+            options.Password.RequiredLength = 6;
+        })
+        .AddRoles<IdentityRole<Guid>>()
+        .AddEntityFrameworkStores<TmsDataContext>();
+
+    var key = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(builder.Configuration["Jwt:Key"]!));
+
+    builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
+        .AddJwtBearer(options =>
+        {
+            options.TokenValidationParameters = new TokenValidationParameters
+            {
+                ValidateIssuerSigningKey = true,
+                IssuerSigningKey = key,
+                ValidateIssuer = true,
+                ValidIssuer = builder.Configuration["Jwt:Issuer"],
+                ValidateAudience = false,
+                RoleClaimType = ClaimTypes.Role,
+            };
+        });
+
+    builder.Services.AddScoped<ITokenService, TokenService>();
+
     builder.Services.AddScoped<IDriverRepository, DriverRepository>();
     builder.Services.AddScoped<IDriverLocationRepository, DriverLocationRepository>();
-    builder.Services.AddScoped<IDriverSessionStore, DriverSessionStore>();
-
     builder.Services.AddScoped<IDriverService, DriverService>();
     builder.Services.AddScoped<IDriverActivityService, DriverActivityService>();
     builder.Services.AddScoped<IDriverLocationService, DriverLocationService>();
+
+    builder.Services.AddSingleton<IDriverSessionStore, DriverSessionStore>();
 
     builder.Services.AddScoped<DriverEventPublisher>();
 
@@ -102,7 +135,16 @@ try
         options.SubstituteApiVersionInUrl = true;
     });
 
+    builder.Services.AddOpenApi();
+
     var app = builder.Build();
+
+    if (app.Environment.IsDevelopment())
+    {
+        app.MapOpenApi();
+        app.MapScalarApiReference();
+    }
+
     using (var scope = app.Services.CreateScope())
     {
         var dbContext = scope.ServiceProvider.GetRequiredService<TmsDataContext>();
@@ -112,6 +154,8 @@ try
     }
 
     app.UseHttpsRedirection();
+
+    app.UseAuthentication();
     app.UseAuthorization();
 
     app.MapControllers();
