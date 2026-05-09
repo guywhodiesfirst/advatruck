@@ -1,5 +1,6 @@
 using System.Security.Claims;
 using System.Text;
+using System.Text.Json.Serialization;
 using API;
 using API.Extensions;
 using API.Middlewares;
@@ -36,8 +37,11 @@ try
         lc.WriteTo.Console();
     });
 
-    builder.Services.AddControllers();
-
+    builder.Services.AddControllers()
+        .AddJsonOptions(options =>
+        {
+            options.JsonSerializerOptions.Converters.Add(new JsonStringEnumConverter());
+        });
     builder.Services.AddHttpClient();
 
     builder.Services.Configure<RabbitMqOptions>(
@@ -113,11 +117,14 @@ try
     builder.Services.AddScoped<IDriverRepository, DriverRepository>();
     builder.Services.AddScoped<IDriverLocationRepository, DriverLocationRepository>();
     builder.Services.AddScoped<IVehicleRepository, VehicleRepository>();
+    builder.Services.AddScoped<ILoadRepository, LoadRepository>();
+
     builder.Services.AddScoped<IDriverService, DriverService>();
     builder.Services.AddScoped<IGeocodingService, NominatimService>();
     builder.Services.AddScoped<IDriverActivityService, DriverActivityService>();
     builder.Services.AddScoped<IDriverLocationService, DriverLocationService>();
     builder.Services.AddScoped<IVehicleService, VehicleService>();
+    builder.Services.AddScoped<ILoadService, LoadService>();
 
     builder.Services.AddSingleton<IDriverSessionStore, DriverSessionStore>();
 

@@ -1,6 +1,5 @@
 namespace Business.Interfaces;
 
-using Core.Entities;
 using Core.Models;
 
 /// <summary>
@@ -20,7 +19,7 @@ public interface IVehicleService
     /// </summary>
     /// <param name="id">Vehicle's ID.</param>
     /// <param name="cancellationToken">Cancellation token.</param>
-    /// <returns>Vehicle if found, otherwise null.</returns>
+    /// <returns>Vehicle if found, otherwise throws an exception.</returns>
     Task<VehicleDto?> GetByIdAsync(Guid id, CancellationToken cancellationToken = default);
 
     /// <summary>
@@ -28,7 +27,7 @@ public interface IVehicleService
     /// </summary>
     /// <param name="vehicleDto">Vehicle to create.</param>
     /// <param name="cancellationToken">Cancellation token.</param>
-    /// <returns>ID of created .</returns>
+    /// <returns>ID of created vehocle.</returns>
     Task<Guid> CreateAsync(VehicleCreateUpdateDto vehicleDto, CancellationToken cancellationToken = default);
 
     /// <summary>
@@ -36,7 +35,7 @@ public interface IVehicleService
     /// </summary>
     /// <param name="vehicleDto">Vehicle with updated data.</param>
     /// <param name="cancellationToken">Cancellation token.</param>
-    /// <returns>Updated .</returns>
+    /// <returns>Updated vehicle.</returns>
     Task<VehicleDto> UpdateAsync(VehicleCreateUpdateDto vehicleDto, CancellationToken cancellationToken = default);
 
     /// <summary>

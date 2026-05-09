@@ -3,15 +3,17 @@ namespace Core.Entities;
 using Core.Enums;
 using Core.Types;
 
-public class LoadLocation
+public class LoadStop
 {
-    public Guid Id { get; set; }
-
     public LoadLocationType LoadLocationType { get; set; }
 
     public DateTime Timestamp { get; set; }
 
-    public string Address { get; set; } = string.Empty;
+    public required string Address { get; set; }
+
+    public required Guid LoadId { get; set; }
+
+    public string Note { get; set; } = null!;
 
     public required GeoPoint Location { get; set; }
 }

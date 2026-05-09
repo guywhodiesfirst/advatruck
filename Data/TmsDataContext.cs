@@ -19,7 +19,7 @@ public class TmsDataContext(DbContextOptions<TmsDataContext> options)
 
     public DbSet<DriverLocation> DriverLocations { get; set; }
 
-    public DbSet<LoadLocation> LoadLocations { get; set; }
+    public DbSet<LoadStop> LoadLocations { get; set; }
 
     public DbSet<Load> Loads { get; set; }
 
@@ -49,8 +49,25 @@ public class TmsDataContext(DbContextOptions<TmsDataContext> options)
         modelBuilder.Entity<DriverLocation>()
             .HasIndex(d => d.DriverId);
 
-        modelBuilder.Entity<LoadLocation>()
-            .OwnsOne(l => l.Location);
+        modelBuilder.Entity<Load>()
+            .OwnsMany(l => l.LoadStops, stopsBuilder =>
+            {
+                stopsBuilder.ToTable("LoadStops");
+                stopsBuilder.OwnsOne(ls => ls.Location);
+                stopsBuilder.WithOwner().HasForeignKey(l => l.LoadId);
+            });
+
+        modelBuilder.Entity<Dispatcher>()
+            .HasMany(d => d.Loads)
+            .WithOne(l => l.Dispatcher)
+            .HasForeignKey(l => l.DispatcherId)
+            .OnDelete(DeleteBehavior.Restrict);
+
+        modelBuilder.Entity<Driver>()
+            .HasMany(d => d.Loads)
+            .WithOne(l => l.Driver)
+            .HasForeignKey(l => l.DriverId)
+            .OnDelete(DeleteBehavior.Restrict);
 
         base.OnModelCreating(modelBuilder);
     }

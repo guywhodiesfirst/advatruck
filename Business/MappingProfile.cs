@@ -19,5 +19,21 @@ public class MappingProfile : Profile
                 dest => dest.DriverName,
                 opt => opt.MapFrom(
                     src => src.Driver.User.FirstName + " " + src.Driver.User.LastName));
+
+        CreateMap<LoadStopDto, LoadStop>()
+            .ReverseMap();
+
+        CreateMap<LoadCreateUpdateDto, Load>()
+            .ForMember(dest => dest.LoadStops, opt => opt.MapFrom(src => src.LoadStops));
+
+        CreateMap<Load, LoadCreateUpdateDto>();
+
+        CreateMap<Load, LoadDto>()
+            .ForMember(
+                dest => dest.DispatcherName,
+                opt => opt.MapFrom(src => src.Dispatcher.User.FirstName + " " + src.Dispatcher.User.LastName))
+            .ForMember(
+                dest => dest.DriverName,
+                opt => opt.MapFrom(src => src.Driver.User.FirstName + " " + src.Driver.User.LastName));
     }
 }
