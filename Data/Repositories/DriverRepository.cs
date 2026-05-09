@@ -11,7 +11,10 @@ public class DriverRepository(TmsDataContext context) : IDriverRepository
     public async Task<IEnumerable<Driver>> GetAllAsync(CancellationToken cancellationToken = default)
     {
         return await context.Drivers
+            .Include(d => d.User)
+            .Include(d => d.Vehicle)
             .Include(d => d.DriverLocations)
+            .AsNoTracking()
             .ToListAsync(cancellationToken);
     }
 
@@ -25,9 +28,9 @@ public class DriverRepository(TmsDataContext context) : IDriverRepository
     public async Task<Driver?> GetByIdAsync(Guid id, CancellationToken cancellationToken = default)
     {
         return await context.Drivers
-            .Include(d => d.DriverLocations
-                .OrderByDescending(dl => dl.UpdateTime))
+            .Include(d => d.DriverLocations.OrderByDescending(dl => dl.UpdateTime))
             .Include(d => d.User)
+            .Include(d => d.Vehicle)
             .Include(d => d.Loads)
             .FirstOrDefaultAsync(d => d.Id == id, cancellationToken);
     }

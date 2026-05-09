@@ -3,19 +3,19 @@ namespace Business.Interfaces;
 using Core.Models;
 
 /// <summary>
-/// Service for managing  business logic.
+/// Service for managing vehicle business logic.
 /// </summary>
 public interface IVehicleService
 {
     /// <summary>
-    /// Retrieve all s.
+    /// Retrieve all vehicles.
     /// </summary>
     /// <param name="cancellationToken">Cancellation token.</param>
     /// <returns>List of s.</returns>
     Task<IEnumerable<VehicleDto>> GetAllAsync(CancellationToken cancellationToken = default);
 
     /// <summary>
-    /// Get  by ID.
+    /// Get vehicle by ID.
     /// </summary>
     /// <param name="id">Vehicle's ID.</param>
     /// <param name="cancellationToken">Cancellation token.</param>
@@ -23,15 +23,15 @@ public interface IVehicleService
     Task<VehicleDto?> GetByIdAsync(Guid id, CancellationToken cancellationToken = default);
 
     /// <summary>
-    /// Create a new .
+    /// Create a new vehicle.
     /// </summary>
     /// <param name="vehicleDto">Vehicle to create.</param>
     /// <param name="cancellationToken">Cancellation token.</param>
-    /// <returns>ID of created vehocle.</returns>
+    /// <returns>ID of created vehicle.</returns>
     Task<Guid> CreateAsync(VehicleCreateUpdateDto vehicleDto, CancellationToken cancellationToken = default);
 
     /// <summary>
-    /// Update  information.
+    /// Update vehicle information.
     /// </summary>
     /// <param name="vehicleDto">Vehicle with updated data.</param>
     /// <param name="cancellationToken">Cancellation token.</param>
@@ -39,7 +39,7 @@ public interface IVehicleService
     Task<VehicleDto> UpdateAsync(VehicleCreateUpdateDto vehicleDto, CancellationToken cancellationToken = default);
 
     /// <summary>
-    /// Delete  by ID.
+    /// Delete vehicle by ID.
     /// </summary>
     /// <param name="id">Vehicle's ID.</param>
     /// <param name="cancellationToken">Cancellation token.</param>

@@ -16,6 +16,16 @@ public static class TmsDataContextExtensions
 
         var hasher = new PasswordHasher<AppUser>();
 
+        var adminRoleId = Guid.NewGuid();
+        var driverRoleId = Guid.NewGuid();
+        var roles = new List<IdentityRole<Guid>>
+        {
+            new() { Id = adminRoleId, Name = "Admin", NormalizedName = "ADMIN" },
+            new() { Id = driverRoleId, Name = "Driver", NormalizedName = "DRIVER" },
+            new() { Id = Guid.NewGuid(), Name = "Dispatcher", NormalizedName = "DISPATCHER" },
+        };
+        context.Roles.AddRange(roles);
+
         var driverUser = new AppUser
         {
             Id = Guid.NewGuid(),
@@ -26,6 +36,7 @@ public static class TmsDataContextExtensions
             UserName = "driver@tms.com",
             NormalizedUserName = "DRIVER@TMS.COM",
             SecurityStamp = Guid.NewGuid().ToString(),
+            RegistrationDate = DateTime.UtcNow,
         };
 
         driverUser.PasswordHash = hasher.HashPassword(driverUser, "Password123!");
@@ -47,6 +58,7 @@ public static class TmsDataContextExtensions
             UserName = "admin@tms.com",
             NormalizedUserName = "ADMIN@TMS.COM",
             SecurityStamp = Guid.NewGuid().ToString(),
+            RegistrationDate = DateTime.UtcNow,
         };
 
         dispatcherUser.PasswordHash = hasher.HashPassword(dispatcherUser, "Admin123!");
@@ -60,6 +72,10 @@ public static class TmsDataContextExtensions
         context.Users.AddRange(driverUser, dispatcherUser);
         context.Drivers.Add(driverEntity);
         context.Dispatchers.Add(dispatcherEntity);
+
+        context.UserRoles.AddRange(
+            new IdentityUserRole<Guid> { UserId = driverUser.Id, RoleId = driverRoleId },
+            new IdentityUserRole<Guid> { UserId = dispatcherUser.Id, RoleId = adminRoleId });
 
         context.SaveChanges();
     }

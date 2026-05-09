@@ -5,4 +5,5 @@ public record RegistrationRequestDto(
     string Password,
     string FirstName,
     string LastName,
-    string Role);
+    string Role,
+    string PhoneNumber);

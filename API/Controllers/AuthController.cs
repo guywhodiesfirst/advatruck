@@ -11,6 +11,7 @@ using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 
+// TODO: move logic to AuthService
 [ApiController]
 [Route("api/v{v:apiVersion}/auth")]
 [ApiVersion(TmsApiVersion.V1)]
@@ -32,20 +33,9 @@ public class AuthController(
             Email = dto.Email,
             FirstName = dto.FirstName,
             LastName = dto.LastName,
+            PhoneNumber = dto.PhoneNumber,
+            RegistrationDate = DateTime.UtcNow,
         };
-
-        if (dto.Role.Equals("Driver", StringComparison.OrdinalIgnoreCase))
-        {
-            user.Driver = new Driver();
-        }
-        else if (dto.Role.Equals("Dispatcher", StringComparison.OrdinalIgnoreCase))
-        {
-            user.Dispatcher = new Dispatcher();
-        }
-        else
-        {
-            throw new TmsException("Invalid role. Use 'Driver' or 'Dispatcher'", HttpStatusCode.BadRequest);
-        }
 
         var result = await userManager.CreateAsync(user, dto.Password);
 
@@ -54,6 +44,24 @@ public class AuthController(
             var errorDetails = string.Join(", ", result.Errors.Select(e => e.Description));
             throw new TmsException($"Registration failed: {errorDetails}", HttpStatusCode.BadRequest);
         }
+
+        var roleResult = await userManager.AddToRoleAsync(user, dto.Role);
+        if (!roleResult.Succeeded)
+        {
+            await userManager.DeleteAsync(user);
+            throw new TmsException("Invalid role or role assignment failed", HttpStatusCode.BadRequest);
+        }
+
+        if (dto.Role.Equals("Driver", StringComparison.OrdinalIgnoreCase))
+        {
+            user.Driver = new Driver { UserId = user.Id };
+        }
+        else if (dto.Role.Equals("Dispatcher", StringComparison.OrdinalIgnoreCase))
+        {
+            user.Dispatcher = new Dispatcher { UserId = user.Id };
+        }
+
+        await userManager.UpdateAsync(user);
 
         var entityId = user.Driver?.Id ?? user.Dispatcher?.Id ?? user.Id;
 

@@ -3,19 +3,19 @@ namespace Business.Interfaces;
 using Core.Models;
 
 /// <summary>
-/// Service for managing  business logic.
+/// Service for managing load business logic.
 /// </summary>
 public interface ILoadService
 {
     /// <summary>
-    /// Retrieve all s.
+    /// Retrieve all loads.
     /// </summary>
     /// <param name="cancellationToken">Cancellation token.</param>
     /// <returns>List of loads.</returns>
     Task<IEnumerable<LoadDto>> GetAllAsync(CancellationToken cancellationToken = default);
 
     /// <summary>
-    /// Get  by ID.
+    /// Get load by ID.
     /// </summary>
     /// <param name="id">Load's ID.</param>
     /// <param name="cancellationToken">Cancellation token.</param>
@@ -23,7 +23,7 @@ public interface ILoadService
     Task<LoadDto?> GetByIdAsync(Guid id, CancellationToken cancellationToken = default);
 
     /// <summary>
-    /// Create a new .
+    /// Create a new load.
     /// </summary>
     /// <param name="dto">Load to create.</param>
     /// <param name="cancellationToken">Cancellation token.</param>
@@ -31,7 +31,7 @@ public interface ILoadService
     Task<Guid> CreateAsync(LoadCreateUpdateDto dto, CancellationToken cancellationToken = default);
 
     /// <summary>
-    /// Update  information.
+    /// Update load information.
     /// </summary>
     /// <param name="dto">Load with updated data.</param>
     /// <param name="cancellationToken">Cancellation token.</param>
@@ -39,7 +39,7 @@ public interface ILoadService
     Task<LoadDto> UpdateAsync(LoadCreateUpdateDto dto, CancellationToken cancellationToken = default);
 
     /// <summary>
-    /// Delete  by ID.
+    /// Delete load by ID.
     /// </summary>
     /// <param name="id">Load's ID.</param>
     /// <param name="cancellationToken">Cancellation token.</param>

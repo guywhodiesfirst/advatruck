@@ -118,6 +118,7 @@ try
     builder.Services.AddScoped<IDriverLocationRepository, DriverLocationRepository>();
     builder.Services.AddScoped<IVehicleRepository, VehicleRepository>();
     builder.Services.AddScoped<ILoadRepository, LoadRepository>();
+    builder.Services.AddScoped<IDispatcherRepository, DispatcherRepository>();
 
     builder.Services.AddScoped<IDriverService, DriverService>();
     builder.Services.AddScoped<IGeocodingService, NominatimService>();
@@ -125,6 +126,7 @@ try
     builder.Services.AddScoped<IDriverLocationService, DriverLocationService>();
     builder.Services.AddScoped<IVehicleService, VehicleService>();
     builder.Services.AddScoped<ILoadService, LoadService>();
+    builder.Services.AddScoped<IDispatcherService, DispatcherService>();
 
     builder.Services.AddSingleton<IDriverSessionStore, DriverSessionStore>();
 

@@ -7,13 +7,18 @@ using Microsoft.EntityFrameworkCore;
 /// <inheritdoc />
 public class DispatcherRepository(TmsDataContext context) : IDispatcherRepository
 {
-    /// <inheritdoc />
+    /// <inheritdoc/>
     public async Task<Dispatcher?> GetByIdAsync(Guid dispatcherId, CancellationToken cancellationToken = default)
-        => await context.Dispatchers.FirstOrDefaultAsync(e => e.Id == dispatcherId, cancellationToken);
+        => await context.Dispatchers
+            .Include(e => e.User)
+            .FirstOrDefaultAsync(e => e.Id == dispatcherId, cancellationToken);
 
-    /// <inheritdoc />
+    /// <inheritdoc/>
     public async Task<IEnumerable<Dispatcher>> GetAllAsync(CancellationToken cancellationToken = default)
-        => await context.Dispatchers.ToListAsync(cancellationToken);
+        => await context.Dispatchers
+            .Include(e => e.User)
+            .AsNoTracking()
+            .ToListAsync(cancellationToken);
 
     /// <inheritdoc />
     public async Task<Guid> AddAsync(Dispatcher dispatcher, CancellationToken cancellationToken = default)

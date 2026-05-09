@@ -1,6 +1,7 @@
 namespace Business.Services;
 
 using System.Net;
+using AutoMapper;
 using Business.Interfaces;
 using Core.Entities;
 using Core.Exceptions;
@@ -8,52 +9,63 @@ using Core.Models;
 using Data.Interfaces;
 
 /// <inheritdoc/>
-public class DriverService(IDriverRepository driverRepository) : IDriverService
+public class DriverService(
+    IDriverRepository driverRepository,
+    IMapper mapper) : IDriverService
 {
     /// <inheritdoc/>
-    public async Task<IEnumerable<Driver>> GetAllAsync(CancellationToken cancellationToken = default)
+    public async Task<IEnumerable<DriverDto>> GetAllAsync(CancellationToken cancellationToken = default)
     {
-        return await driverRepository.GetAllAsync(cancellationToken);
+        var drivers = await driverRepository.GetAllAsync(cancellationToken);
+        return mapper.Map<IEnumerable<DriverDto>>(drivers);
     }
 
     /// <inheritdoc/>
-    public async Task<Driver?> GetByIdAsync(Guid id, CancellationToken cancellationToken = default)
-    {
-        var driver = await driverRepository.GetByIdAsync(id, cancellationToken);
-
-        return driver
-               ?? throw new TmsException($"Driver with ID {id} not found", HttpStatusCode.NotFound);
-    }
-
-    /// <inheritdoc/>
-    public async Task<Guid> CreateAsync(Driver driver, CancellationToken cancellationToken = default)
-    {
-        return await driverRepository.AddAsync(driver, cancellationToken);
-    }
-
-    /// <inheritdoc/>
-    public async Task DeleteAsync(Guid id, CancellationToken cancellationToken = default)
+    public async Task<DriverDto?> GetByIdAsync(Guid id, CancellationToken cancellationToken = default)
     {
         var driver = await driverRepository.GetByIdAsync(id, cancellationToken);
 
         if (driver == null)
         {
-            throw new TmsException("Cannot delete: driver not found", HttpStatusCode.NotFound);
+            throw new TmsException($"Driver with ID {id} not found", HttpStatusCode.NotFound);
         }
 
-        await driverRepository.DeleteAsync(driver, cancellationToken);
+        return mapper.Map<DriverDto>(driver);
     }
 
     /// <inheritdoc/>
-    public async Task<Driver> UpdateAsync(Driver driver, CancellationToken cancellationToken = default)
+    public async Task<Guid> CreateAsync(DriverCreateUpdateDto dto, CancellationToken cancellationToken = default)
     {
-        var exists = await driverRepository.GetByIdAsync(driver.Id, cancellationToken);
-        if (exists == null)
+        try
+        {
+            var driver = mapper.Map<Driver>(dto);
+            await driverRepository.AddAsync(driver, cancellationToken);
+            return driver.Id;
+        }
+        catch (Exception)
+        {
+            throw new TmsException("Failed to create driver. Ensure UserId is valid.", HttpStatusCode.BadRequest);
+        }
+    }
+
+    /// <inheritdoc/>
+    public async Task<DriverDto> UpdateAsync(DriverCreateUpdateDto dto, CancellationToken cancellationToken = default)
+    {
+        if (!dto.Id.HasValue)
+        {
+            throw new TmsException("Driver ID is required for update", HttpStatusCode.BadRequest);
+        }
+
+        var existingDriver = await driverRepository.GetByIdAsync(dto.Id.Value, cancellationToken);
+        if (existingDriver == null)
         {
             throw new TmsException("Cannot update: driver not found", HttpStatusCode.NotFound);
         }
 
-        return await driverRepository.UpdateAsync(driver, cancellationToken);
+        mapper.Map(dto, existingDriver);
+        await driverRepository.UpdateAsync(existingDriver, cancellationToken);
+
+        return mapper.Map<DriverDto>(existingDriver);
     }
 
     /// <inheritdoc/>
@@ -77,5 +89,18 @@ public class DriverService(IDriverRepository driverRepository) : IDriverService
                 .FirstOrDefault()?.Location,
             RegistrationDate = driver.User.RegistrationDate,
         };
+    }
+
+    /// <inheritdoc/>
+    public async Task DeleteAsync(Guid id, CancellationToken cancellationToken = default)
+    {
+        var driver = await driverRepository.GetByIdAsync(id, cancellationToken);
+
+        if (driver == null)
+        {
+            throw new TmsException("Cannot delete: driver not found", HttpStatusCode.NotFound);
+        }
+
+        await driverRepository.DeleteAsync(driver, cancellationToken);
     }
 }
