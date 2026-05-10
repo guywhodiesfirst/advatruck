@@ -63,4 +63,15 @@ public class LoadRepository(TmsDataContext context) : ILoadRepository
             .OrderBy(l => l.LoadStops.OrderBy(s => s.Timestamp).Select(s => s.Timestamp).FirstOrDefault())
             .FirstOrDefaultAsync(cancellationToken);
     }
+
+    public async Task<IEnumerable<Load>> GetAllByStatusAsync(LoadStatus status, CancellationToken cancellationToken = default)
+        => await context.Loads
+            .Include(l => l.Driver)
+            .ThenInclude(d => d.User)
+            .Include(l => l.Dispatcher)
+            .ThenInclude(d => d.User)
+            .Include(l => l.LoadStops)
+            .Where(l => l.LoadStatus == status)
+            .AsNoTracking()
+            .ToListAsync(cancellationToken);
 }

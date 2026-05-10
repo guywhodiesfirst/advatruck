@@ -132,6 +132,7 @@ try
 
     builder.Services.AddMemoryCache();
     builder.Services.AddHostedService<DriverActivityWorker>();
+    builder.Services.AddHostedService<LoadStatusWorker>();
 
     builder.Services.AddHttpClient<IGeocodingService, NominatimService>(c =>
     {

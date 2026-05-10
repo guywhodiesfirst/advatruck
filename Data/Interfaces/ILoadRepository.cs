@@ -1,3 +1,5 @@
+using Core.Enums;
+
 namespace Data.Interfaces;
 
 using Core.Entities;
@@ -52,5 +54,13 @@ public interface ILoadRepository
     /// <param name="driverId">Driver's ID.</param>
     /// <param name="cancellationToken">Cancellation token.</param>
     /// <returns>Next active load.</returns>
-    Task<Load?> GetNextActiveLoadByDriverIdAsync(Guid driverId, CancellationToken cancellationToken);
+    Task<Load?> GetNextActiveLoadByDriverIdAsync(Guid driverId, CancellationToken cancellationToken  = default);
+
+    /// <summary>
+    /// Retrieves all the loads with the specified LoadStatus.
+    /// </summary>
+    /// <param name="status">Load status.</param>
+    /// <param name="cancellationToken">Cancellation token.</param>
+    /// <returns>Loads with the specified status.</returns>
+    Task<IEnumerable<Load>> GetAllByStatusAsync(LoadStatus status, CancellationToken cancellationToken = default);
 }

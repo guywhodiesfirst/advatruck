@@ -38,6 +38,7 @@ public class LoadService(
         try
         {
             var load = mapper.Map<Load>(dto);
+            load.Id = Guid.NewGuid();
             load.CreatedAt = DateTime.UtcNow;
 
             UpdateLoadStatus(load);
@@ -50,7 +51,6 @@ public class LoadService(
 
             await loadRepository.AddAsync(load, cancellationToken);
 
-            // If a driver was assigned during creation, notify them
             if (load.DriverId.HasValue)
             {
                 await notificationService.PublishLoadAssignedAsync(load.DriverId.Value, load.Id);
@@ -64,7 +64,8 @@ public class LoadService(
         }
         catch (Exception ex)
         {
-            throw new TmsException("Failed to create Load. Ensure related entities exist.", ex, HttpStatusCode.BadRequest);
+            // Додаємо більше контексту в помилку для дебагу
+            throw new TmsException($"Failed to create Load: {ex.Message}", ex, HttpStatusCode.BadRequest);
         }
     }
 

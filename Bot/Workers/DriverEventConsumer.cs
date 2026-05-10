@@ -14,7 +14,6 @@ using Telegram.Bot.Types.Enums;
 
 /// <summary>
 /// Orchestrates Telegram notifications based on RabbitMQ events.
-/// This worker is independent of the Business layer.
 /// </summary>
 public class DriverEventConsumer(
     IConnection connection,
@@ -38,7 +37,6 @@ public class DriverEventConsumer(
             _channel.ExchangeDeclare(ExchangeName, ExchangeType.Topic, durable: true);
             _channel.QueueDeclare(QueueName, durable: true, exclusive: false, autoDelete: false);
 
-            // Bind to all relevant event types
             _channel.QueueBind(QueueName, ExchangeName, "driver.inactive");
             _channel.QueueBind(QueueName, ExchangeName, "load.assigned");
             _channel.QueueBind(QueueName, ExchangeName, "load.canceled");
