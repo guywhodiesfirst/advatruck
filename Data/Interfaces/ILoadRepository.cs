@@ -45,4 +45,12 @@ public interface ILoadRepository
     /// <param name="cancellationToken">Cancellation token.</param>
     /// <returns>Task representing async operation.</returns>
     Task DeleteAsync(Load load, CancellationToken cancellationToken = default);
+
+    /// <summary>
+    /// Retrieves next active load for the driver.
+    /// </summary>
+    /// <param name="driverId">Driver's ID.</param>
+    /// <param name="cancellationToken">Cancellation token.</param>
+    /// <returns>Next active load.</returns>
+    Task<Load?> GetNextActiveLoadByDriverIdAsync(Guid driverId, CancellationToken cancellationToken);
 }

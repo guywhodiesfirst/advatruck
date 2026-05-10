@@ -16,11 +16,21 @@ public static class KeyboardLayout
     [
         [KeyboardButton.WithRequestLocation(BotButtons.SendLocation)],
         [new KeyboardButton(BotButtons.StartTracking)],
-        [new KeyboardButton(BotButtons.StartTrip)],
-        [new KeyboardButton(BotButtons.EndTrip)],
         [new KeyboardButton(BotButtons.Logout)],
     ])
     {
         ResizeKeyboard = true,
     };
+
+    public static ReplyKeyboardMarkup ActiveTripKeyboard => new(
+    [
+        [KeyboardButton.WithRequestLocation(BotButtons.SendLocation)],
+        [new KeyboardButton(BotButtons.LoadDetails)],
+    ])
+    {
+        ResizeKeyboard = true,
+    };
+
+    public static InlineKeyboardMarkup LoadDetailsKeyboard(Guid? loadId) =>
+        new(InlineKeyboardButton.WithCallbackData(BotButtons.LoadDetails, $"load_details:{loadId}"));
 }

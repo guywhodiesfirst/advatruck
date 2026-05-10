@@ -53,4 +53,20 @@ public interface ILoadService
     /// <param name="cancellationToken">Cancellation token.</param>
     /// <returns>Updated load data.</returns>
     Task<LoadDto> UpdateStatusAsync(LoadStatusUpdateDto dto, CancellationToken cancellationToken = default);
+
+    /// <summary>
+    /// Assign driver to the load.
+    /// </summary>
+    /// <param name="dto">DTO.</param>
+    /// <param name="cancellationToken">Cancellation token.</param>
+    /// <returns>Updated load data.</returns>
+    Task<LoadDto> AssignDriverAsync(LoadAssignDriverDto dto, CancellationToken cancellationToken = default);
+
+    /// <summary>
+    /// Retrieves next active load assigned to the driver.
+    /// </summary>
+    /// <param name="driverId">Driver's ID.</param>
+    /// <param name="cancellationToken">Cancellation token.</param>
+    /// <returns>Next active load if exists, otherwise null.</returns>
+    Task<LoadDto?> GetActiveLoadByIdAsync(Guid driverId, CancellationToken cancellationToken = default);
 }

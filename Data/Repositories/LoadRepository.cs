@@ -1,6 +1,7 @@
 namespace Data.Repositories;
 
 using Core.Entities;
+using Core.Enums;
 using Data.Interfaces;
 using Microsoft.EntityFrameworkCore;
 
@@ -9,11 +10,24 @@ public class LoadRepository(TmsDataContext context) : ILoadRepository
 {
     /// <inheritdoc />
     public async Task<Load?> GetByIdAsync(Guid loadId, CancellationToken cancellationToken = default)
-        => await context.Loads.FirstOrDefaultAsync(e => e.Id == loadId, cancellationToken);
+        => await context.Loads
+            .Include(l => l.Driver)
+            .ThenInclude(d => d.User)
+            .Include(l => l.Dispatcher)
+            .ThenInclude(d => d.User)
+            .Include(l => l.LoadStops)
+            .FirstOrDefaultAsync(e => e.Id == loadId, cancellationToken);
 
     /// <inheritdoc />
     public async Task<IEnumerable<Load>> GetAllAsync(CancellationToken cancellationToken = default)
-        => await context.Loads.ToListAsync(cancellationToken);
+        => await context.Loads
+            .Include(l => l.Driver)
+            .ThenInclude(d => d.User)
+            .Include(l => l.Dispatcher)
+            .ThenInclude(d => d.User)
+            .Include(l => l.LoadStops)
+            .AsNoTracking()
+            .ToListAsync(cancellationToken);
 
     /// <inheritdoc />
     public async Task<Guid> AddAsync(Load load, CancellationToken cancellationToken = default)
@@ -36,5 +50,17 @@ public class LoadRepository(TmsDataContext context) : ILoadRepository
     {
         context.Loads.Remove(load);
         await context.SaveChangesAsync(cancellationToken);
+    }
+
+    /// <inheritdoc/>
+    public async Task<Load?> GetNextActiveLoadByDriverIdAsync(Guid driverId, CancellationToken cancellationToken)
+    {
+        return await context.Loads
+            .Include(l => l.LoadStops)
+            .Include(l => l.Dispatcher).ThenInclude(d => d.User)
+            .Where(l => l.DriverId == driverId &&
+                        (l.LoadStatus == LoadStatus.Scheduled || l.LoadStatus == LoadStatus.Ongoing))
+            .OrderBy(l => l.LoadStops.OrderBy(s => s.Timestamp).Select(s => s.Timestamp).FirstOrDefault())
+            .FirstOrDefaultAsync(cancellationToken);
     }
 }

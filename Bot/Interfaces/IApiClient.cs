@@ -33,4 +33,12 @@ public interface IApiClient
     /// <param name="token">JWT token.</param>
     /// <returns>Driver profile.</returns>
     Task<DriverProfileDto?> GetProfileAsync(string token);
+
+    /// <summary>
+    /// Retrieves load with specified ID.
+    /// </summary>
+    /// <param name="loadId">Load ID.</param>
+    /// <param name="token">JWT token.</param>
+    /// <returns>Active load.</returns>
+    Task<LoadDto?> GetLoadByIdAsync(Guid loadId, string token);
 }

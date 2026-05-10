@@ -1,6 +1,6 @@
-using Core.Enums;
-
 namespace Core.Models;
+
+using Core.Enums;
 
 public class LoadDto
 {
@@ -14,9 +14,9 @@ public class LoadDto
 
     public decimal Rate { get; set; }
 
-    public decimal DriverCharge { get; set; }
+    public decimal? DriverCharge { get; set; }
 
-    public Guid DriverId { get; set; }
+    public Guid? DriverId { get; set; }
 
     public string DriverName { get; set; } = string.Empty;
 

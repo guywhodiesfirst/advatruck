@@ -3,25 +3,29 @@ namespace Bot.Workers;
 using System.Text;
 using System.Text.Json;
 using Bot.Interfaces;
+using Bot.UI;
 using Data.Interfaces;
 using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
 using RabbitMQ.Client;
 using RabbitMQ.Client.Events;
 using Telegram.Bot;
+using Telegram.Bot.Types.Enums;
 
 /// <summary>
-/// Consumes events from RabbitMQ regarding driver inactivity and notifies them via Telegram.
+/// Orchestrates Telegram notifications based on RabbitMQ events.
+/// This worker is independent of the Business layer.
 /// </summary>
 public class DriverEventConsumer(
     IConnection connection,
-    ITrackingService tracking,
     ITelegramBotClient bot,
     IDriverSessionStore sessions,
+    ITrackingService tracking,
     ILogger<DriverEventConsumer> logger)
     : BackgroundService
 {
-    private const string QueueName = "driver.inactive";
+    private const string ExchangeName = "tms.driver.events";
+    private const string QueueName = "bot.notification.queue";
     private IModel? _channel;
 
     public override Task StartAsync(CancellationToken cancellationToken)
@@ -30,19 +34,22 @@ public class DriverEventConsumer(
         {
             _channel = connection.CreateModel();
 
-            _channel.QueueDeclare(
-                queue: QueueName,
-                durable: true,
-                exclusive: false,
-                autoDelete: false);
+            // Infrastructure setup: Ensure exchange and queue exist
+            _channel.ExchangeDeclare(ExchangeName, ExchangeType.Topic, durable: true);
+            _channel.QueueDeclare(QueueName, durable: true, exclusive: false, autoDelete: false);
+
+            // Bind to all relevant event types
+            _channel.QueueBind(QueueName, ExchangeName, "driver.inactive");
+            _channel.QueueBind(QueueName, ExchangeName, "load.assigned");
+            _channel.QueueBind(QueueName, ExchangeName, "load.canceled");
 
             _channel.BasicQos(0, 10, false);
 
-            logger.LogInformation("RabbitMQ Consumer started. Listening on queue: {Queue}", QueueName);
+            logger.LogInformation("Bot Messaging Consumer started. Listening on: {Queue}", QueueName);
         }
         catch (Exception ex)
         {
-            logger.LogCritical(ex, "Failed to initialize RabbitMQ channel");
+            logger.LogCritical(ex, "Could not initialize RabbitMQ connection in Bot service");
         }
 
         return base.StartAsync(cancellationToken);
@@ -56,84 +63,129 @@ public class DriverEventConsumer(
         }
 
         var consumer = new EventingBasicConsumer(_channel);
-
         consumer.Received += async (_, ea) =>
         {
-            await HandleMessage(ea, cancellationToken);
+            try
+            {
+                var body = ea.Body.ToArray();
+                var json = Encoding.UTF8.GetString(body);
+
+                var integrationEvent = JsonSerializer.Deserialize<DriverIntegrationEvent>(json, new JsonSerializerOptions
+                {
+                    PropertyNameCaseInsensitive = true,
+                });
+
+                if (integrationEvent != null)
+                {
+                    await HandleEventAsync(integrationEvent, cancellationToken);
+                }
+
+                _channel.BasicAck(ea.DeliveryTag, false);
+            }
+            catch (Exception ex)
+            {
+                logger.LogError(ex, "Failed to process message from {RoutingKey}", ea.RoutingKey);
+                _channel.BasicNack(ea.DeliveryTag, false, true);
+            }
         };
 
-        _channel.BasicConsume(
-            queue: QueueName,
-            autoAck: false,
-            consumer: consumer);
-
+        _channel.BasicConsume(QueueName, autoAck: false, consumer: consumer);
         return Task.CompletedTask;
     }
 
-    private async Task HandleMessage(
-        BasicDeliverEventArgs eventArgs,
-        CancellationToken cancellationToken)
+    private async Task HandleEventAsync(DriverIntegrationEvent @event, CancellationToken ct)
     {
-        Guid? currentDriverId = null;
-        try
+        var chatId = await sessions.GetChatIdByDriverIdAsync(@event.DriverId);
+        if (chatId == null)
         {
-            var body = eventArgs.Body.ToArray();
-            var messageJson = Encoding.UTF8.GetString(body);
-            var msg = JsonSerializer.Deserialize<DriverInactiveMessage>(messageJson);
-
-            if (msg == null)
-            {
-                _channel!.BasicAck(eventArgs.DeliveryTag, false);
-                return;
-            }
-
-            currentDriverId = msg.DriverId;
-
-            var isTracking = await sessions.IsTrackingActiveAsync(msg.DriverId);
-            if (!isTracking)
-            {
-                _channel!.BasicAck(eventArgs.DeliveryTag, false);
-                return;
-            }
-
-            var lastStop = await sessions.GetTrackingStoppedAtAsync(msg.DriverId);
-            if (lastStop != null && DateTime.UtcNow - lastStop < TimeSpan.FromMinutes(5))
-            {
-                _channel!.BasicAck(eventArgs.DeliveryTag, false);
-                return;
-            }
-
-            var chatId = await sessions.GetChatIdByDriverIdAsync(msg.DriverId);
-            if (chatId != null)
-            {
-                await tracking.StopTrackingAsync(chatId.Value);
-
-                await bot.SendMessage(
-                    chatId.Value,
-                    "⚠️ Твою геолокацію втрачено.\n\nБудь ласка, перевір з'єднання та увімкни трансляцію знову 🛰",
-                    cancellationToken: cancellationToken);
-
-                logger.LogInformation("Inactivity notification sent to driver {DriverId}", msg.DriverId);
-            }
-
-            _channel!.BasicAck(eventArgs.DeliveryTag, false);
+            return;
         }
-        catch (Exception ex)
+
+        switch (@event.EventType)
         {
-            logger.LogError(ex, "Error processing inactivity message for driver {DriverId}", currentDriverId);
-            _channel!.BasicNack(eventArgs.DeliveryTag, false, true);
+            case "load.assigned":
+                await SendLoadAssignmentAsync(chatId.Value, @event.LoadId, ct);
+                break;
+
+            case "load.canceled":
+                await SendLoadCancellationAsync(chatId.Value, ct);
+                break;
+
+            case "driver.inactive":
+                await HandleDriverInactivityAsync(chatId.Value, @event.DriverId, ct);
+                break;
         }
+    }
+
+    private async Task HandleDriverInactivityAsync(long chatId, Guid driverId, CancellationToken ct)
+    {
+        var isTracking = await sessions.IsTrackingActiveAsync(driverId);
+        if (!isTracking)
+        {
+            return;
+        }
+
+        var lastStop = await sessions.GetTrackingStoppedAtAsync(driverId);
+        if (lastStop != null && DateTime.UtcNow - lastStop < TimeSpan.FromMinutes(2))
+        {
+            return;
+        }
+
+        await tracking.StopTrackingAsync(chatId);
+
+        const string text = "⚠️ *Втрачено сигнал GPS*\n\n" +
+                            "Ми припинили відстеження, оскільки дані не надходять\\. Будь ласка, та увімкніть його знову\\.";
+
+        await bot.SendMessage(
+            chatId: chatId,
+            text: text,
+            parseMode: ParseMode.MarkdownV2,
+            cancellationToken: ct);
+
+        logger.LogInformation("Inactivity notification processed for driver {DriverId}", driverId);
+    }
+
+    private async Task SendLoadAssignmentAsync(long chatId, Guid? loadId, CancellationToken ct)
+    {
+        const string text = "📦 *Нове замовлення призначено\\!*\n\n" +
+                            "Диспетчер додав вам новий рейс\\. Натисніть кнопку нижче, щоб переглянути деталі\\.";
+
+        var keyboard = KeyboardLayout.LoadDetailsKeyboard(loadId);
+
+        await bot.SendMessage(
+            chatId: chatId,
+            text: text,
+            parseMode: ParseMode.MarkdownV2,
+            replyMarkup: keyboard,
+            cancellationToken: ct);
+    }
+
+    private async Task SendLoadCancellationAsync(long chatId, CancellationToken ct)
+    {
+        const string text = "❌ *Вантаж скасовано*\n\n" +
+                            "Поточний рейс було скасовано диспетчером\\. Очікуйте на нові замовлення\\.";
+
+        await bot.SendMessage(
+            chatId: chatId,
+            text: text,
+            parseMode: ParseMode.MarkdownV2,
+            cancellationToken: ct);
     }
 
     public override void Dispose()
     {
         _channel?.Close();
-        _channel?.Dispose();
         base.Dispose();
     }
 
-    private class DriverInactiveMessage
+    private class DriverIntegrationEvent
     {
         public Guid DriverId { get; set; }
+
+        public Guid? LoadId { get; set; }
+
+        public string EventType { get; set; } = string.Empty;
+
+        public DateTime Timestamp { get; set; }
     }
 }

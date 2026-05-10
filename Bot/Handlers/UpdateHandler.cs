@@ -6,6 +6,7 @@ using Core.Exceptions;
 using Data.Interfaces;
 using Microsoft.Extensions.Logging;
 using Telegram.Bot.Types;
+using Telegram.Bot.Types.Enums;
 
 /// <summary>
 /// Handles incoming Telegram updates and routes them to appropriate handlers.
@@ -14,11 +15,26 @@ public class UpdateHandler(
     ITrackingService tracking,
     IAuthService auth,
     ICommandService commands,
+    ICallbackQueryService callbacks,
     IDriverSessionStore sessions,
     ILogger<UpdateHandler> logger)
 {
     public async Task HandleAsync(Update update)
     {
+        if (update is { Type: UpdateType.CallbackQuery, CallbackQuery: not null })
+        {
+            try
+            {
+                await callbacks.HandleAsync(update.CallbackQuery, CancellationToken.None);
+            }
+            catch (Exception ex)
+            {
+                logger.LogError(ex, "Error handling callback query {Id}", update.CallbackQuery.Id);
+            }
+
+            return;
+        }
+
         var message = update.Message ?? update.EditedMessage;
         if (message == null)
         {
@@ -57,12 +73,8 @@ public class UpdateHandler(
             var pwState = await sessions.GetAwaitingPasswordStateAsync(chatId);
             if (pwState.IsAwaiting && !string.IsNullOrEmpty(pwState.Email))
             {
-                var actualState = await sessions.GetAwaitingPasswordStateAsync(chatId);
-                if (actualState.IsAwaiting)
-                {
-                    await auth.HandleLoginAsync(chatId, pwState.Email, text);
-                    return;
-                }
+                await auth.HandleLoginAsync(chatId, pwState.Email, text);
+                return;
             }
 
             if (text != "/start" && text != BotButtons.Login)
@@ -86,7 +98,7 @@ public class UpdateHandler(
         }
         catch (Exception ex)
         {
-            logger.LogError(ex, "Unexpected error in UpdateHandler for chat {ChatId}", update.Message?.Chat.Id);
+            logger.LogError(ex, "Unexpected error in UpdateHandler for chat {ChatId}", chatId);
             await commands.HandleErrorAsync(chatId, "⚠️ Сталася помилка на сервері. Спробуйте пізніше.");
         }
     }

@@ -4,7 +4,6 @@ using System.Text.Json.Serialization;
 using API;
 using API.Extensions;
 using API.Middlewares;
-using API.Notifications;
 using API.Workers;
 using Asp.Versioning;
 using Business;
@@ -127,11 +126,11 @@ try
     builder.Services.AddScoped<IVehicleService, VehicleService>();
     builder.Services.AddScoped<ILoadService, LoadService>();
     builder.Services.AddScoped<IDispatcherService, DispatcherService>();
+    builder.Services.AddScoped<INotificationService, NotificationService>();
 
     builder.Services.AddSingleton<IDriverSessionStore, DriverSessionStore>();
 
-    builder.Services.AddScoped<DriverEventPublisher>();
-
+    builder.Services.AddMemoryCache();
     builder.Services.AddHostedService<DriverActivityWorker>();
 
     builder.Services.AddHttpClient<IGeocodingService, NominatimService>(c =>

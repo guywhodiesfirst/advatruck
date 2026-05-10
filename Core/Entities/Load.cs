@@ -17,12 +17,12 @@ public class Load
 
     public decimal Rate { get; set; }
 
-    public decimal DriverCharge { get; set; }
+    public decimal? DriverCharge { get; set; }
 
     [StringLength(500)]
     public string Note { get; set; } = null!;
 
-    public Guid DriverId { get; set; }
+    public Guid? DriverId { get; set; }
 
     public Driver Driver { get; set; } = null!;
 

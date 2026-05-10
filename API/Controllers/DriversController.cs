@@ -12,7 +12,9 @@ using Microsoft.AspNetCore.Mvc;
 [ApiController]
 [Route("api/v{v:apiVersion}/drivers")]
 [ApiVersion(TmsApiVersion.V1)]
-public class DriversController(IDriverService driverService) : ControllerBase
+public class DriversController(
+    IDriverService driverService,
+    ILoadService loadService) : ControllerBase
 {
     [HttpGet]
     public async Task<ActionResult<IEnumerable<DriverDto>>> GetAll(CancellationToken cancellationToken)
@@ -62,5 +64,18 @@ public class DriversController(IDriverService driverService) : ControllerBase
     {
         await driverService.DeleteAsync(id, cancellationToken);
         return NoContent();
+    }
+
+    [HttpGet("{id:guid}/active-load")]
+    public async Task<ActionResult<LoadDto>> GetActiveLoad(Guid id, CancellationToken cancellationToken)
+    {
+        var result = await loadService.GetActiveLoadByIdAsync(id, cancellationToken);
+
+        if (result == null)
+        {
+            return NotFound($"No active or upcoming loads found for driver with ID {id}");
+        }
+
+        return Ok(result);
     }
 }

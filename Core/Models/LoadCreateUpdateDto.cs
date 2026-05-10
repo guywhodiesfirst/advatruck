@@ -16,13 +16,6 @@ public class LoadCreateUpdateDto
     public decimal Rate { get; set; }
 
     [Required]
-    [Range(0, double.MaxValue)]
-    public decimal DriverCharge { get; set; }
-
-    [Required]
-    public Guid DriverId { get; set; }
-
-    [Required]
     public Guid DispatcherId { get; set; }
 
     [Required]

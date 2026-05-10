@@ -1,6 +1,7 @@
 namespace Data.Repositories;
 
 using Core.Entities;
+using Core.Enums;
 using Data.Interfaces;
 using Microsoft.EntityFrameworkCore;
 
@@ -18,10 +19,16 @@ public class DriverRepository(TmsDataContext context) : IDriverRepository
             .ToListAsync(cancellationToken);
     }
 
+    /// <inheritdoc/>
     public async Task<IEnumerable<Driver>> GetAllInTripAsync(CancellationToken cancellationToken = default)
     {
-        // trips are currently not implemented
-        return await GetAllAsync(cancellationToken);
+        return await context.Drivers
+            .Include(d => d.User)
+            .Include(d => d.Vehicle)
+            .Include(d => d.DriverLocations)
+            .Where(d => d.Loads.Any(l => l.LoadStatus == LoadStatus.Ongoing))
+            .AsNoTracking()
+            .ToListAsync(cancellationToken);
     }
 
     /// <inheritdoc/>

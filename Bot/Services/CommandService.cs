@@ -50,27 +50,13 @@ public class CommandService(
                 await bot.SendMessage(chatId, "Ви не увійшли у систему!", replyMarkup: KeyboardLayout.StartKeyboard);
                 return;
 
-            case BotButtons.StartTrip:
-                await bot.SendMessage(
-                    chatId,
-                    "🚀 Рейс розпочато",
-                    replyMarkup: KeyboardLayout.MainKeyboard);
-                return;
-
-            case BotButtons.EndTrip:
-                await bot.SendMessage(
-                    chatId,
-                    "✅ Рейс завершено",
-                    replyMarkup: KeyboardLayout.MainKeyboard);
-                return;
-
             case BotButtons.StartTracking:
                 await bot.SendMessage(
                     chatId,
                     "📡 Щоб почати трекінг:\n\n" +
-                      "1️⃣ Натисни '📎' (скріпка)\n" +
-                      "2️⃣ Обери 'Location' (Місце)\n" +
-                      "3️⃣ Натисни 'Share My Live Location'\n\n" +
+                      "1️⃣ Натисни '📎'\n" +
+                      "2️⃣ Обери 'Місце'\n" +
+                      "3️⃣ Натисни 'Поділитися моїм маячком у реальному часі'\n\n" +
                       "Бот отримуватиме геопозицію автоматично 🛰",
                     replyMarkup: KeyboardLayout.MainKeyboard);
                 return;

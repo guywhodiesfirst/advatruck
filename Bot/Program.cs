@@ -73,6 +73,7 @@ try
     builder.Services.AddSingleton<IAuthService, AuthService>();
     builder.Services.AddSingleton<ICommandService, CommandService>();
     builder.Services.AddSingleton<ITrackingService, TrackingService>();
+    builder.Services.AddSingleton<ICallbackQueryService, CallbackQueryService>();
 
     builder.Services.AddHttpClient();
     builder.Services.AddSingleton<IApiClient, ApiClient>();

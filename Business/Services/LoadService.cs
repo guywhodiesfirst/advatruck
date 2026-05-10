@@ -12,6 +12,7 @@ using Data.Interfaces;
 /// <inheritdoc />
 public class LoadService(
     ILoadRepository loadRepository,
+    INotificationService notificationService,
     IMapper mapper) : ILoadService
 {
     /// <inheritdoc />
@@ -31,8 +32,6 @@ public class LoadService(
             : mapper.Map<LoadDto>(load);
     }
 
-    // TODO: add stops timestamps validation
-
     /// <inheritdoc />
     public async Task<Guid> CreateAsync(LoadCreateUpdateDto dto, CancellationToken cancellationToken = default)
     {
@@ -50,11 +49,22 @@ public class LoadService(
             }
 
             await loadRepository.AddAsync(load, cancellationToken);
+
+            // If a driver was assigned during creation, notify them
+            if (load.DriverId.HasValue)
+            {
+                await notificationService.PublishLoadAssignedAsync(load.DriverId.Value, load.Id);
+            }
+
             return load.Id;
         }
-        catch (Exception)
+        catch (TmsException)
         {
-            throw new TmsException("Failed to create Load. Check if Driver and Dispatcher exist.", HttpStatusCode.BadRequest);
+            throw;
+        }
+        catch (Exception ex)
+        {
+            throw new TmsException("Failed to create Load. Ensure related entities exist.", ex, HttpStatusCode.BadRequest);
         }
     }
 
@@ -62,17 +72,25 @@ public class LoadService(
     public async Task<LoadDto> UpdateAsync(LoadCreateUpdateDto dto, CancellationToken cancellationToken = default)
     {
         var existingLoad = await loadRepository.GetByIdAsync(dto.Id, cancellationToken);
-
         if (existingLoad == null)
         {
             throw new TmsException("Load not found", HttpStatusCode.NotFound);
         }
 
+        var oldDriverId = existingLoad.DriverId;
         mapper.Map(dto, existingLoad);
+
         UpdateLoadStatus(existingLoad);
         HandleClosedAt(existingLoad);
 
         await loadRepository.UpdateAsync(existingLoad, cancellationToken);
+
+        // Notify if driver has changed or newly assigned
+        if (existingLoad.DriverId.HasValue && existingLoad.DriverId != oldDriverId)
+        {
+            await notificationService.PublishLoadAssignedAsync(existingLoad.DriverId.Value, existingLoad.Id);
+        }
+
         return mapper.Map<LoadDto>(existingLoad);
     }
 
@@ -80,7 +98,6 @@ public class LoadService(
     public async Task<LoadDto> UpdateStatusAsync(LoadStatusUpdateDto dto, CancellationToken cancellationToken = default)
     {
         var existingLoad = await loadRepository.GetByIdAsync(dto.LoadId, cancellationToken);
-
         if (existingLoad == null)
         {
             throw new TmsException("Load not found", HttpStatusCode.NotFound);
@@ -90,14 +107,55 @@ public class LoadService(
         HandleClosedAt(existingLoad);
 
         await loadRepository.UpdateAsync(existingLoad, cancellationToken);
+
+        if (dto.LoadStatus == LoadStatus.Cancelled && existingLoad.DriverId.HasValue)
+        {
+            await notificationService.PublishLoadCanceledAsync(existingLoad.DriverId.Value, existingLoad.Id);
+        }
+
         return mapper.Map<LoadDto>(existingLoad);
+    }
+
+    /// <inheritdoc/>
+    public async Task<LoadDto> AssignDriverAsync(LoadAssignDriverDto dto, CancellationToken cancellationToken = default)
+    {
+        var existingLoad = await loadRepository.GetByIdAsync(dto.LoadId, cancellationToken);
+        if (existingLoad == null)
+        {
+            throw new TmsException("Load not found", HttpStatusCode.NotFound);
+        }
+
+        existingLoad.DriverId = dto.DriverId;
+        existingLoad.DriverCharge = dto.DriverCharge;
+        HandleClosedAt(existingLoad);
+
+        await loadRepository.UpdateAsync(existingLoad, cancellationToken);
+
+        var updatedLoad = await loadRepository.GetByIdAsync(existingLoad.Id, cancellationToken);
+
+        await notificationService.PublishLoadAssignedAsync(dto.DriverId, existingLoad.Id);
+
+        return mapper.Map<LoadDto>(updatedLoad);
+    }
+
+    /// <inheritdoc/>
+    public async Task<LoadDto?> GetActiveLoadByIdAsync(Guid driverId, CancellationToken cancellationToken = default)
+    {
+        try
+        {
+            var load = await loadRepository.GetNextActiveLoadByDriverIdAsync(driverId, cancellationToken);
+            return load == null ? null : mapper.Map<LoadDto>(load);
+        }
+        catch (Exception ex)
+        {
+            throw new TmsException($"Error retrieving active load: {ex.Message}", HttpStatusCode.InternalServerError);
+        }
     }
 
     /// <inheritdoc />
     public async Task DeleteAsync(Guid id, CancellationToken cancellationToken = default)
     {
         var load = await loadRepository.GetByIdAsync(id, cancellationToken);
-
         if (load == null)
         {
             throw new TmsException("Load not found", HttpStatusCode.NotFound);

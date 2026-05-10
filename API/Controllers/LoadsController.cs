@@ -45,6 +45,15 @@ public class LoadsController(ILoadService service) : ControllerBase
         return Ok(result);
     }
 
+    [HttpPatch("assign-driver")]
+    public async Task<ActionResult<LoadDto>> AssignDriver(
+        [FromBody] LoadAssignDriverDto dto,
+        CancellationToken cancellationToken)
+    {
+        var result = await service.AssignDriverAsync(dto, cancellationToken);
+        return Ok(result);
+    }
+
     [HttpDelete("{id:guid}")]
     public async Task<ActionResult> Delete(Guid id, CancellationToken cancellationToken)
     {

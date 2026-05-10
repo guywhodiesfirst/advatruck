@@ -94,4 +94,31 @@ public class ApiClient(
 
         throw new TmsException(errorMessage, response.StatusCode);
     }
+
+    /// <inheritdoc/>
+    public async Task<LoadDto?> GetLoadByIdAsync(Guid loadId, string token)
+    {
+        using var request = new HttpRequestMessage(HttpMethod.Get, $"{_baseUrl}/loads/{loadId}");
+        request.Headers.Authorization = new AuthenticationHeaderValue("Bearer", token);
+
+        var response = await http.SendAsync(request);
+
+        if (response.StatusCode == System.Net.HttpStatusCode.NotFound)
+        {
+            return null;
+        }
+
+        if (!response.IsSuccessStatusCode)
+        {
+            await HandleErrorResponse(response);
+        }
+
+        var options = new JsonSerializerOptions
+        {
+            PropertyNameCaseInsensitive = true,
+        };
+        options.Converters.Add(new System.Text.Json.Serialization.JsonStringEnumConverter());
+
+        return await response.Content.ReadFromJsonAsync<LoadDto>(options);
+    }
 }
