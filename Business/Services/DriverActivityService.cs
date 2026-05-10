@@ -31,7 +31,7 @@ public class DriverActivityService(
                 }
 
                 // TODO: replace hardcoded value with options
-                if (now - last > TimeSpan.FromMinutes(1))
+                if (now - last > TimeSpan.FromMinutes(15))
                 {
                     result.Add(d.Id);
                 }
