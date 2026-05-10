@@ -27,4 +27,12 @@ public interface INotificationService
     /// <param name="loadId">The unique identifier of the canceled load.</param>
     /// <returns>A task representing the asynchronous operation.</returns>
     Task PublishLoadCanceledAsync(Guid driverId, Guid loadId);
+
+    /// <summary>
+    /// Publishes an event when a scheduled load transition to ongoing status and the trip starts.
+    /// </summary>
+    /// <param name="driverId">The unique identifier of the driver.</param>
+    /// <param name="loadId">The unique identifier of the started load.</param>
+    /// <returns>A task representing the asynchronous operation.</returns>
+    Task PublishLoadStartedAsync(Guid driverId, Guid loadId);
 }

@@ -12,9 +12,6 @@ using RabbitMQ.Client.Events;
 using Telegram.Bot;
 using Telegram.Bot.Types.Enums;
 
-/// <summary>
-/// Orchestrates Telegram notifications based on RabbitMQ events.
-/// </summary>
 public class DriverEventConsumer(
     IConnection connection,
     ITelegramBotClient bot,
@@ -33,13 +30,13 @@ public class DriverEventConsumer(
         {
             _channel = connection.CreateModel();
 
-            // Infrastructure setup: Ensure exchange and queue exist
             _channel.ExchangeDeclare(ExchangeName, ExchangeType.Topic, durable: true);
             _channel.QueueDeclare(QueueName, durable: true, exclusive: false, autoDelete: false);
 
             _channel.QueueBind(QueueName, ExchangeName, "driver.inactive");
             _channel.QueueBind(QueueName, ExchangeName, "load.assigned");
             _channel.QueueBind(QueueName, ExchangeName, "load.canceled");
+            _channel.QueueBind(QueueName, ExchangeName, "load.ongoing");
 
             _channel.BasicQos(0, 10, false);
 
@@ -83,7 +80,7 @@ public class DriverEventConsumer(
             catch (Exception ex)
             {
                 logger.LogError(ex, "Failed to process message from {RoutingKey}", ea.RoutingKey);
-                _channel.BasicNack(ea.DeliveryTag, false, true);
+                _channel.BasicNack(ea.DeliveryTag, false, false);
             }
         };
 
@@ -105,6 +102,10 @@ public class DriverEventConsumer(
                 await SendLoadAssignmentAsync(chatId.Value, @event.LoadId, ct);
                 break;
 
+            case "load.ongoing":
+                await SendTripStartedAsync(chatId.Value, @event.LoadId, ct);
+                break;
+
             case "load.canceled":
                 await SendLoadCancellationAsync(chatId.Value, ct);
                 break;
@@ -118,35 +119,48 @@ public class DriverEventConsumer(
     private async Task HandleDriverInactivityAsync(long chatId, Guid driverId, CancellationToken ct)
     {
         var isTracking = await sessions.IsTrackingActiveAsync(driverId);
-        if (!isTracking)
+
+        if (isTracking)
         {
-            return;
+            var lastStop = await sessions.GetTrackingStoppedAtAsync(driverId);
+            if (lastStop != null && DateTime.UtcNow - lastStop < TimeSpan.FromMinutes(2))
+            {
+                return;
+            }
+
+            await tracking.StopTrackingAsync(chatId);
         }
 
-        var lastStop = await sessions.GetTrackingStoppedAtAsync(driverId);
-        if (lastStop != null && DateTime.UtcNow - lastStop < TimeSpan.FromMinutes(2))
-        {
-            return;
-        }
-
-        await tracking.StopTrackingAsync(chatId);
-
-        const string text = "⚠️ *Втрачено сигнал GPS*\n\n" +
-                            "Ми припинили відстеження, оскільки дані не надходять\\. Будь ласка, та увімкніть його знову\\.";
+        const string text = "⚠️ *Геолокація не активна*\n\n" +
+                            "Ваш рейс вже триває, але ми не отримуємо дані про місцезнаходження\\. " +
+                            "Будь ласка, перевірте зв'язок та переконайтеся, що відстеження увімкнено\\.";
 
         await bot.SendMessage(
             chatId: chatId,
             text: text,
             parseMode: ParseMode.MarkdownV2,
             cancellationToken: ct);
-
-        logger.LogInformation("Inactivity notification processed for driver {DriverId}", driverId);
     }
 
     private async Task SendLoadAssignmentAsync(long chatId, Guid? loadId, CancellationToken ct)
     {
         const string text = "📦 *Нове замовлення призначено\\!*\n\n" +
                             "Диспетчер додав вам новий рейс\\. Натисніть кнопку нижче, щоб переглянути деталі\\.";
+
+        var keyboard = KeyboardLayout.LoadDetailsKeyboard(loadId);
+
+        await bot.SendMessage(
+            chatId: chatId,
+            text: text,
+            parseMode: ParseMode.MarkdownV2,
+            replyMarkup: keyboard,
+            cancellationToken: ct);
+    }
+
+    private async Task SendTripStartedAsync(long chatId, Guid? loadId, CancellationToken ct)
+    {
+        const string text = "🚀 *Час вирушати\\!*\n\n" +
+                            "Ваш запланований рейс тепер активний\\. Натисніть кнопку нижче, щоб відкрити деталі та розпочати навігацію\\.";
 
         var keyboard = KeyboardLayout.LoadDetailsKeyboard(loadId);
 

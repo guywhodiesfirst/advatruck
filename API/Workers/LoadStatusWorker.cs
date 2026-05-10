@@ -47,7 +47,7 @@ public class LoadStatusWorker(
 
                     try
                     {
-                        await notificationService.PublishLoadAssignedAsync(load.DriverId.Value, load.Id);
+                        await notificationService.PublishLoadStartedAsync(load.DriverId.Value, load.Id);
                         logger.LogInformation("Trip start notification sent to driver {DriverId}", load.DriverId);
                     }
                     catch (Exception ex)

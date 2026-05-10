@@ -64,7 +64,6 @@ public class LoadService(
         }
         catch (Exception ex)
         {
-            // Додаємо більше контексту в помилку для дебагу
             throw new TmsException($"Failed to create Load: {ex.Message}", ex, HttpStatusCode.BadRequest);
         }
     }
@@ -79,6 +78,8 @@ public class LoadService(
         }
 
         var oldDriverId = existingLoad.DriverId;
+        var oldStatus = existingLoad.LoadStatus;
+
         mapper.Map(dto, existingLoad);
 
         UpdateLoadStatus(existingLoad);
@@ -86,10 +87,17 @@ public class LoadService(
 
         await loadRepository.UpdateAsync(existingLoad, cancellationToken);
 
-        // Notify if driver has changed or newly assigned
-        if (existingLoad.DriverId.HasValue && existingLoad.DriverId != oldDriverId)
+        if (existingLoad.DriverId.HasValue)
         {
-            await notificationService.PublishLoadAssignedAsync(existingLoad.DriverId.Value, existingLoad.Id);
+            if (existingLoad.DriverId != oldDriverId)
+            {
+                await notificationService.PublishLoadAssignedAsync(existingLoad.DriverId.Value, existingLoad.Id);
+            }
+
+            if (existingLoad.LoadStatus == LoadStatus.Ongoing && oldStatus == LoadStatus.Scheduled)
+            {
+                await notificationService.PublishLoadStartedAsync(existingLoad.DriverId.Value, existingLoad.Id);
+            }
         }
 
         return mapper.Map<LoadDto>(existingLoad);

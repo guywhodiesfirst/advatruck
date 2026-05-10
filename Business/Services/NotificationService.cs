@@ -8,33 +8,23 @@ using Core.Exceptions;
 using Microsoft.Extensions.Logging;
 using RabbitMQ.Client;
 
-/// <summary>
-/// Implementation of the notification service using RabbitMQ Topic Exchange.
-/// Dispatches events to the 'tms.driver.events' exchange.
-/// </summary>
 public class NotificationService(IConnection connection, ILogger<NotificationService> logger)
     : INotificationService
 {
     private const string ExchangeName = "tms.driver.events";
 
-    /// <inheritdoc />
     public Task PublishDriverInactiveAsync(Guid driverId)
         => SendEventAsync(driverId, null, "driver.inactive");
 
-    /// <inheritdoc />
     public Task PublishLoadAssignedAsync(Guid driverId, Guid loadId)
         => SendEventAsync(driverId, loadId, "load.assigned");
 
-    /// <inheritdoc />
     public Task PublishLoadCanceledAsync(Guid driverId, Guid loadId)
         => SendEventAsync(driverId, loadId, "load.canceled");
 
-    /// <summary>
-    /// Internal method to serialize and publish events to RabbitMQ.
-    /// </summary>
-    /// <param name="driverId">Target driver identifier.</param>
-    /// <param name="loadId">Related load identifier (optional).</param>
-    /// <param name="routingKey">The RabbitMQ routing key (e.g., load.assigned).</param>
+    public Task PublishLoadStartedAsync(Guid driverId, Guid loadId)
+        => SendEventAsync(driverId, loadId, "load.ongoing");
+
     private async Task SendEventAsync(Guid driverId, Guid? loadId, string routingKey)
     {
         await Task.Run(() =>
