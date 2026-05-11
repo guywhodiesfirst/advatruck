@@ -37,4 +37,6 @@ public class Load
     public int CargoLength { get; set; }
 
     public int CargoHeight { get; set; }
+
+    public ICollection<AuctionLot> AuctionLots { get; set; } = new List<AuctionLot>();
 }

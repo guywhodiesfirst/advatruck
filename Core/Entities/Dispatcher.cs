@@ -11,4 +11,6 @@ public class Dispatcher
     public AppUser User { get; set; }
 
     public ICollection<Load>? Loads { get; set; }
+
+    public ICollection<AuctionLot>? AuctionLots { get; set; }
 }

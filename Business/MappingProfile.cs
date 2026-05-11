@@ -2,6 +2,7 @@ namespace Business;
 
 using AutoMapper;
 using Core.Entities;
+using Core.Enums;
 using Core.Identity;
 using Core.Models;
 
@@ -68,5 +69,23 @@ public class MappingProfile : Profile
             .ForMember(dest => dest.Email, opt => opt.MapFrom(src => src.User.Email))
             .ForMember(dest => dest.PhoneNumber, opt => opt.MapFrom(src => src.User.PhoneNumber))
             .ForMember(dest => dest.RegistrationDate, opt => opt.MapFrom(src => src.User.RegistrationDate));
+
+        CreateMap<AuctionLot, AuctionLotDto>()
+            .ForMember(dest => dest.DispatcherName, opt => opt.MapFrom(src => src.DispatcherCreated.User.FirstName + " " + src.DispatcherCreated.User.LastName))
+            .ForMember(dest => dest.Bids, opt => opt.MapFrom(src => src.Bids.OrderByDescending(b => b.CreatedAt)));
+
+        CreateMap<AuctionLotCreateUpdateDto, AuctionLot>()
+            .ForMember(dest => dest.Id, opt => opt.Ignore())
+            .ForMember(dest => dest.Bids, opt => opt.Ignore())
+            .ForMember(dest => dest.DispatcherCreated, opt => opt.Ignore())
+            .ForMember(dest => dest.Status, opt => opt.MapFrom(_ => AuctionStatus.Active));
+
+        CreateMap<Bid, BidDto>()
+            .ForMember(dest => dest.DriverName, opt => opt.MapFrom(src => src.DriverCreated.User.FirstName + " " + src.DriverCreated.User.LastName));
+
+        CreateMap<BidCreateUpdateDto, Bid>()
+            .ForMember(dest => dest.CreatedAt, opt => opt.MapFrom(_ => DateTime.UtcNow))
+            .ForMember(dest => dest.DriverCreated, opt => opt.Ignore())
+            .ForMember(dest => dest.AuctionLot, opt => opt.Ignore());
     }
 }

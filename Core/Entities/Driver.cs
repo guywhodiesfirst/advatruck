@@ -19,4 +19,6 @@ public class Driver
     public ICollection<DriverLocation> DriverLocations { get; set; } = new List<DriverLocation>();
 
     public ICollection<Load> Loads { get; set; } = new List<Load>();
+
+    public ICollection<Bid> Bids { get; set; } = new List<Bid>();
 }

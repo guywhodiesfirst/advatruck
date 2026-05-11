@@ -118,6 +118,8 @@ try
     builder.Services.AddScoped<IVehicleRepository, VehicleRepository>();
     builder.Services.AddScoped<ILoadRepository, LoadRepository>();
     builder.Services.AddScoped<IDispatcherRepository, DispatcherRepository>();
+    builder.Services.AddScoped<IAuctionLotRepository, AuctionLotRepository>();
+    builder.Services.AddScoped<IBidRepository, BidRepository>();
 
     builder.Services.AddScoped<IDriverService, DriverService>();
     builder.Services.AddScoped<IGeocodingService, NominatimService>();
@@ -127,6 +129,8 @@ try
     builder.Services.AddScoped<ILoadService, LoadService>();
     builder.Services.AddScoped<IDispatcherService, DispatcherService>();
     builder.Services.AddScoped<INotificationService, NotificationService>();
+    builder.Services.AddScoped<IAuctionLotService, AuctionLotService>();
+    builder.Services.AddScoped<IBidService, BidService>();
 
     builder.Services.AddSingleton<IDriverSessionStore, DriverSessionStore>();
 

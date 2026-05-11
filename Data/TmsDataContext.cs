@@ -25,6 +25,10 @@ public class TmsDataContext(DbContextOptions<TmsDataContext> options)
 
     public DbSet<Dispatcher> Dispatchers { get; set; }
 
+    public DbSet<AuctionLot> AuctionLots { get; set; }
+
+    public DbSet<Bid> Bids { get; set; }
+
     /// <inheritdoc/>
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
