@@ -4,11 +4,13 @@ using Asp.Versioning;
 using Business.Interfaces;
 using Core.Entities;
 using Core.Models;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 
 [ApiController]
 [Route("api/v{v:apiVersion}/drivers/{driverId:guid}/locations")]
 [ApiVersion(TmsApiVersion.V1)]
+[Authorize]
 public class DriverLocationsController(
     IDriverLocationService service)
     : ControllerBase
@@ -23,13 +25,13 @@ public class DriverLocationsController(
         return Ok(result);
     }
 
+    [Authorize(Roles = "Driver")]
     [HttpPost]
     public async Task<ActionResult<DriverLocation>> CreateAsync(
         Guid driverId,
         [FromBody] TrackingUpdateRequestDto request,
         CancellationToken cancellationToken)
     {
-        // TODO: OpenStreetMap integration
         var result = await service.AddAsync(
             driverId,
             request,

@@ -3,11 +3,13 @@ namespace API.Controllers;
 using Asp.Versioning;
 using Business.Interfaces;
 using Core.Models;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 
 [ApiController]
 [Route("api/v{v:apiVersion}/dispatchers")]
 [ApiVersion(TmsApiVersion.V1)]
+[Authorize(Roles = "Admin")]
 public class DispatchersController(IDispatcherService service) : ControllerBase
 {
     [HttpGet]

@@ -12,10 +12,12 @@ using Microsoft.AspNetCore.Mvc;
 [ApiController]
 [Route("api/v{v:apiVersion}/drivers")]
 [ApiVersion(TmsApiVersion.V1)]
+[Authorize]
 public class DriversController(
     IDriverService driverService,
     ILoadService loadService) : ControllerBase
 {
+    [Authorize(Roles = "Dispatcher,Admin")]
     [HttpGet]
     public async Task<ActionResult<IEnumerable<DriverDto>>> GetAll(CancellationToken cancellationToken)
     {
@@ -35,7 +37,6 @@ public class DriversController(
     public async Task<ActionResult<DriverProfileDto>> GetProfile(CancellationToken cancellationToken)
     {
         var email = User.FindFirstValue(ClaimTypes.Email);
-
         if (string.IsNullOrEmpty(email))
         {
             throw new TmsException("User email claim not found in token", HttpStatusCode.Unauthorized);
@@ -45,6 +46,7 @@ public class DriversController(
         return Ok(profile);
     }
 
+    [Authorize(Roles = "Admin")]
     [HttpPost]
     public async Task<ActionResult<Guid>> Create([FromBody] DriverCreateUpdateDto dto, CancellationToken cancellationToken)
     {
@@ -52,6 +54,7 @@ public class DriversController(
         return CreatedAtAction(nameof(GetById), new { v = "1", id }, id);
     }
 
+    [Authorize(Roles = "Admin")]
     [HttpPut]
     public async Task<ActionResult<DriverDto>> Update([FromBody] DriverCreateUpdateDto dto, CancellationToken cancellationToken)
     {
@@ -59,6 +62,7 @@ public class DriversController(
         return Ok(result);
     }
 
+    [Authorize(Roles = "Admin")]
     [HttpDelete("{id:guid}")]
     public async Task<ActionResult> Delete(Guid id, CancellationToken cancellationToken)
     {
@@ -70,7 +74,6 @@ public class DriversController(
     public async Task<ActionResult<LoadDto>> GetActiveLoad(Guid id, CancellationToken cancellationToken)
     {
         var result = await loadService.GetActiveLoadByIdAsync(id, cancellationToken);
-
         if (result == null)
         {
             return NotFound($"No active or upcoming loads found for driver with ID {id}");

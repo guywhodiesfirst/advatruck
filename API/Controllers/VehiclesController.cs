@@ -2,13 +2,14 @@ namespace API.Controllers;
 
 using Asp.Versioning;
 using Business.Interfaces;
-using Core.Entities;
 using Core.Models;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 
 [ApiController]
 [Route("api/v{v:apiVersion}/vehicles")]
 [ApiVersion(TmsApiVersion.V1)]
+[Authorize]
 public class VehiclesController(IVehicleService service) : ControllerBase
 {
     [HttpGet]
@@ -25,6 +26,7 @@ public class VehiclesController(IVehicleService service) : ControllerBase
         return Ok(result);
     }
 
+    [Authorize(Roles = "Admin")]
     [HttpPost]
     public async Task<ActionResult<Guid>> Create([FromBody] VehicleCreateUpdateDto dto, CancellationToken cancellationToken)
     {
@@ -32,6 +34,7 @@ public class VehiclesController(IVehicleService service) : ControllerBase
         return CreatedAtAction(nameof(GetById), new { v = TmsApiVersion.V1, id }, id);
     }
 
+    [Authorize(Roles = "Admin")]
     [HttpPut]
     public async Task<ActionResult<VehicleDto>> Update([FromBody] VehicleCreateUpdateDto dto, CancellationToken cancellationToken)
     {
@@ -39,6 +42,7 @@ public class VehiclesController(IVehicleService service) : ControllerBase
         return Ok(result);
     }
 
+    [Authorize(Roles = "Admin")]
     [HttpDelete("{id:guid}")]
     public async Task<ActionResult> Delete(Guid id, CancellationToken cancellationToken)
     {

@@ -3,11 +3,13 @@ namespace API.Controllers;
 using Asp.Versioning;
 using Business.Interfaces;
 using Core.Models;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 
 [ApiController]
 [Route("api/v{v:apiVersion}/auctionLots")]
 [ApiVersion(TmsApiVersion.V1)]
+[Authorize]
 public class AuctionLotsController(IAuctionLotService service) : ControllerBase
 {
     [HttpGet]
@@ -24,6 +26,7 @@ public class AuctionLotsController(IAuctionLotService service) : ControllerBase
         return Ok(result);
     }
 
+    [Authorize(Roles = "Dispatcher,Admin")]
     [HttpPost]
     public async Task<ActionResult<Guid>> Create([FromBody] AuctionLotCreateUpdateDto dto, CancellationToken cancellationToken)
     {
@@ -31,6 +34,7 @@ public class AuctionLotsController(IAuctionLotService service) : ControllerBase
         return CreatedAtAction(nameof(GetById), new { v = "1", id }, id);
     }
 
+    [Authorize(Roles = "Dispatcher,Admin")]
     [HttpPut]
     public async Task<ActionResult<AuctionLotDto>> Update([FromBody] AuctionLotCreateUpdateDto dto, CancellationToken cancellationToken)
     {
@@ -38,6 +42,7 @@ public class AuctionLotsController(IAuctionLotService service) : ControllerBase
         return Ok(result);
     }
 
+    [Authorize(Roles = "Admin")]
     [HttpDelete("{id:guid}")]
     public async Task<ActionResult> Delete(Guid id, CancellationToken cancellationToken)
     {

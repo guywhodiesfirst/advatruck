@@ -7,11 +7,11 @@ using Core.Entities;
 using Core.Exceptions;
 using Core.Identity;
 using Core.Models;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 
-// TODO: move logic to AuthService
 [ApiController]
 [Route("api/v{v:apiVersion}/auth")]
 [ApiVersion(TmsApiVersion.V1)]
@@ -19,6 +19,7 @@ public class AuthController(
     UserManager<AppUser> userManager,
     ITokenService tokenService) : ControllerBase
 {
+    [Authorize(Roles = "Admin")]
     [HttpPost("register")]
     public async Task<ActionResult<AuthResponseDto>> Register(RegistrationRequestDto dto)
     {
@@ -90,7 +91,8 @@ public class AuthController(
             throw new TmsException("Invalid email or password", HttpStatusCode.Unauthorized);
         }
 
-        var role = user.Driver != null ? "Driver" : "Dispatcher";
+        var roles = await userManager.GetRolesAsync(user);
+        var role = roles.FirstOrDefault() ?? "User";
         var entityId = user.Driver?.Id ?? user.Dispatcher?.Id ?? user.Id;
 
         return Ok(new AuthResponseDto(
