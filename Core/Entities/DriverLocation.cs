@@ -1,6 +1,6 @@
-using Core.Types;
+namespace Core.Entities;
 
-namespace Data.Models;
+using Core.Types;
 
 public class DriverLocation
 {
@@ -11,4 +11,6 @@ public class DriverLocation
     public Guid DriverId { get; set; }
 
     public Driver Driver { get; set; } = null!;
+
+    public string Address { get; set; } = string.Empty;
 }

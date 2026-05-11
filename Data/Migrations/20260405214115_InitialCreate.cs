@@ -1,10 +1,10 @@
-﻿using System;
-using Microsoft.EntityFrameworkCore.Migrations;
-
-#nullable disable
+﻿#nullable disable
 
 namespace Data.Migrations
 {
+    using System;
+    using Microsoft.EntityFrameworkCore.Migrations;
+
     /// <inheritdoc />
     public partial class InitialCreate : Migration
     {
@@ -21,7 +21,7 @@ namespace Data.Migrations
                     Phone = table.Column<string>(type: "character varying(15)", maxLength: 15, nullable: false),
                     Email = table.Column<string>(type: "character varying(254)", maxLength: 254, nullable: false),
                     Note = table.Column<string>(type: "character varying(500)", maxLength: 500, nullable: true),
-                    RegistrationDate = table.Column<DateTime>(type: "timestamp with time zone", nullable: false)
+                    RegistrationDate = table.Column<DateTime>(type: "timestamp with time zone", nullable: false),
                 },
                 constraints: table =>
                 {
@@ -35,7 +35,7 @@ namespace Data.Migrations
                     UpdateTime = table.Column<DateTime>(type: "timestamp with time zone", nullable: false),
                     DriverId = table.Column<Guid>(type: "uuid", nullable: false),
                     Location_Latitude = table.Column<double>(type: "double precision", nullable: false),
-                    Location_Longitude = table.Column<double>(type: "double precision", nullable: false)
+                    Location_Longitude = table.Column<double>(type: "double precision", nullable: false),
                 },
                 constraints: table =>
                 {
