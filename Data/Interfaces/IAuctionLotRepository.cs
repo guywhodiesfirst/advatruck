@@ -15,6 +15,13 @@ public interface IAuctionLotRepository
     Task<IEnumerable<AuctionLot>> GetAllAsync(CancellationToken cancellationToken = default);
 
     /// <summary>
+    /// Retrieve all active auction lots from the database.
+    /// </summary>
+    /// <param name="cancellationToken">Cancellation token.</param>
+    /// <returns>All active auction lots.</returns>
+    Task<IEnumerable<AuctionLot>> GetAllActiveAsync(CancellationToken cancellationToken = default);
+
+    /// <summary>
     /// Get the auctionLot by ID.
     /// </summary>
     /// <param name="auctionLotId">AuctionLot ID.</param>

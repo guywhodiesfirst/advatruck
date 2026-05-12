@@ -1,12 +1,23 @@
 namespace Data.Repositories;
 
 using Core.Entities;
+using Core.Enums;
 using Data.Interfaces;
 using Microsoft.EntityFrameworkCore;
 
 /// <inheritdoc />
 public class AuctionLotRepository(TmsDataContext context) : IAuctionLotRepository
 {
+    /// <inheritdoc/>
+    public async Task<IEnumerable<AuctionLot>> GetAllActiveAsync(CancellationToken cancellationToken = default)
+        => await context.AuctionLots
+            .Where(e => e.Status == AuctionStatus.Active && e.EndsAt < DateTime.UtcNow)
+            .Include(e => e.DispatcherCreated).ThenInclude(d => d.User)
+            .Include(e => e.Bids)
+            .ThenInclude(b => b.DriverCreated)
+            .ThenInclude(d => d.User)
+            .ToListAsync(cancellationToken);
+
     /// <inheritdoc />
     public async Task<AuctionLot?> GetByIdAsync(Guid auctionLotId, CancellationToken cancellationToken = default)
         => await context.AuctionLots

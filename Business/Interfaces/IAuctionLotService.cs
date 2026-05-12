@@ -1,5 +1,6 @@
 namespace Business.Interfaces;
 
+using Core.Enums;
 using Core.Models;
 
 /// <summary>
@@ -13,6 +14,13 @@ public interface IAuctionLotService
     /// <param name="cancellationToken">Cancellation token.</param>
     /// <returns>List of auction lots.</returns>
     Task<IEnumerable<AuctionLotDto>> GetAllAsync(CancellationToken cancellationToken = default);
+
+    /// <summary>
+    /// Retrieve all active auction lots.
+    /// </summary>
+    /// <param name="cancellationToken">Cancellation token.</param>
+    /// <returns>List of active auction lots.</returns>
+    Task<IEnumerable<AuctionLotDto>> GetAllActiveAsync(CancellationToken cancellationToken = default);
 
     /// <summary>
     /// Get auction lot by ID.
@@ -45,4 +53,13 @@ public interface IAuctionLotService
     /// <param name="cancellationToken">Cancellation token.</param>
     /// <returns>Task representing async operation.</returns>
     Task DeleteAsync(Guid id, CancellationToken cancellationToken = default);
+
+    /// <summary>
+    /// Updates only the status of the auction lot.
+    /// </summary>
+    /// <param name="id">AuctionID.</param>
+    /// <param name="status">New auction status.</param>
+    /// <param name="cancellationToken">Cancellation token.</param>
+    /// <returns>Task representing async operation.</returns>
+    Task<AuctionLotDto> UpdateStatusAsync(Guid id, AuctionStatus status, CancellationToken cancellationToken);
 }
