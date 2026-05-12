@@ -13,7 +13,7 @@ public class AuctionLot
 
     public required Dispatcher DispatcherCreated { get; set; }
 
-    public Load Load { get; set; } = null!;
+    public required Load Load { get; set; }
 
     public DateTime StartsAt { get; set; }
 

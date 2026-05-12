@@ -19,6 +19,13 @@ public class AuctionLotsController(IAuctionLotService service) : ControllerBase
         return Ok(result);
     }
 
+    [HttpGet]
+    public async Task<ActionResult<IEnumerable<AuctionLotDto>>> GetAllActive(CancellationToken cancellationToken)
+    {
+        var result = await service.GetAllActiveAsync(cancellationToken);
+        return Ok(result);
+    }
+
     [HttpGet("{id:guid}")]
     public async Task<ActionResult<AuctionLotDto>> GetById(Guid id, CancellationToken cancellationToken)
     {
@@ -48,5 +55,15 @@ public class AuctionLotsController(IAuctionLotService service) : ControllerBase
     {
         await service.DeleteAsync(id, cancellationToken);
         return NoContent();
+    }
+
+    [Authorize(Roles = "Dispatcher,Admin")]
+    [HttpPatch("{id:guid}/status")]
+    public async Task<ActionResult<AuctionLotDto>> UpdateStatus(
+        Guid id,
+        [FromBody] AuctionLotStatusUpdateDto dto,
+        CancellationToken cancellationToken)
+    {
+        return await service.UpdateStatusAsync(id, dto.Status, cancellationToken);
     }
 }

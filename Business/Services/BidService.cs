@@ -4,6 +4,7 @@ using System.Net;
 using AutoMapper;
 using Business.Interfaces;
 using Core.Entities;
+using Core.Enums;
 using Core.Exceptions;
 using Core.Models;
 using Data.Interfaces;
@@ -11,6 +12,7 @@ using Data.Interfaces;
 /// <inheritdoc/>
 public class BidService(
     IBidRepository repository,
+    IAuctionLotRepository auctionLots,
     IMapper mapper) : IBidService
 {
     /// <inheritdoc/>
@@ -36,6 +38,17 @@ public class BidService(
     /// <inheritdoc/>
     public async Task<Guid> CreateAsync(BidCreateUpdateDto dto, CancellationToken cancellationToken = default)
     {
+        var auctionInDb = await auctionLots.GetByIdAsync(dto.AuctionLotId, cancellationToken);
+        if (auctionInDb == null)
+        {
+            throw new TmsException("Auction Lot not found", HttpStatusCode.NotFound);
+        }
+
+        if (auctionInDb.Status == AuctionStatus.Finished || auctionInDb.EndsAt > DateTime.UtcNow)
+        {
+            throw new TmsException("Cannot create bid: auction not active", HttpStatusCode.BadRequest);
+        }
+
         try
         {
             var entity = mapper.Map<Bid>(dto);
@@ -60,6 +73,12 @@ public class BidService(
         if (existingEntity == null)
         {
             throw new TmsException("Cannot update: bid not found", HttpStatusCode.NotFound);
+        }
+
+        if (existingEntity.AuctionLot.Status == AuctionStatus.Finished ||
+            existingEntity.AuctionLot.EndsAt > DateTime.UtcNow)
+        {
+            throw new TmsException("Cannot update: auction not active", HttpStatusCode.NotFound);
         }
 
         mapper.Map(dto, existingEntity);

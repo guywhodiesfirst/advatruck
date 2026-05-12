@@ -4,6 +4,7 @@ using System.Net;
 using AutoMapper;
 using Business.Interfaces;
 using Core.Entities;
+using Core.Enums;
 using Core.Exceptions;
 using Core.Models;
 using Data.Interfaces;
@@ -17,6 +18,13 @@ public class AuctionLotService(
     public async Task<IEnumerable<AuctionLotDto>> GetAllAsync(CancellationToken cancellationToken = default)
     {
         var entities = await repository.GetAllAsync(cancellationToken);
+        return mapper.Map<IEnumerable<AuctionLotDto>>(entities);
+    }
+
+    /// <inheritdoc/>
+    public async Task<IEnumerable<AuctionLotDto>> GetAllActiveAsync(CancellationToken cancellationToken = default)
+    {
+        var entities = await repository.GetAllActiveAsync(cancellationToken);
         return mapper.Map<IEnumerable<AuctionLotDto>>(entities);
     }
 
@@ -79,5 +87,30 @@ public class AuctionLotService(
         }
 
         await repository.DeleteAsync(entity, cancellationToken);
+    }
+
+    /// <inheritdoc/>
+    public async Task<AuctionLotDto> UpdateStatusAsync(Guid id, AuctionStatus status, CancellationToken cancellationToken = default)
+    {
+        if (status == AuctionStatus.Active)
+        {
+            throw new TmsException("Cannot reactivate a finished auction. Please, create a new one", HttpStatusCode.BadRequest);
+        }
+
+        var auction = await repository.GetByIdAsync(id, cancellationToken);
+
+        if (auction == null)
+        {
+            throw new TmsException("Auction not found", HttpStatusCode.NotFound);
+        }
+
+        if (auction.Status != status)
+        {
+            auction.Status = status;
+            auction.EndsAt = DateTime.UtcNow;
+            await repository.UpdateAsync(auction, cancellationToken);
+        }
+
+        return mapper.Map<AuctionLotDto>(auction);
     }
 }
