@@ -13,6 +13,8 @@ using Microsoft.EntityFrameworkCore;
 public class TmsDataContext(DbContextOptions<TmsDataContext> options)
     : IdentityDbContext<AppUser, IdentityRole<Guid>, Guid>(options)
 {
+    public DbSet<Admin>  Admins { get; set; }
+
     public DbSet<Driver> Drivers { get; set; }
 
     public DbSet<Vehicle> Vehicles { get; set; }

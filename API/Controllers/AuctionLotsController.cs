@@ -19,7 +19,7 @@ public class AuctionLotsController(IAuctionLotService service) : ControllerBase
         return Ok(result);
     }
 
-    [HttpGet]
+    [HttpGet("active")]
     public async Task<ActionResult<IEnumerable<AuctionLotDto>>> GetAllActive(CancellationToken cancellationToken)
     {
         var result = await service.GetAllActiveAsync(cancellationToken);

@@ -59,6 +59,14 @@ public class MappingProfile : Profile
                 dest => dest.FullName,
                 opt => opt.MapFrom(src => $"{src.User.FirstName} {src.User.LastName}"));
 
+        CreateMap<AdminCreateUpdateDto, Admin>()
+            .ForMember(dest => dest.Id, opt => opt.MapFrom(src => src.Id ?? Guid.NewGuid()));
+
+        CreateMap<Admin, AdminDto>()
+            .ForMember(
+                dest => dest.FullName,
+                opt => opt.MapFrom(src => $"{src.User.FirstName} {src.User.LastName}"));
+
         CreateMap<AppUser, UserProfileDto>()
             .ForMember(dest => dest.Email, opt => opt.MapFrom(src => src.Email))
             .ForMember(dest => dest.RegistrationDate, opt => opt.MapFrom(src => src.RegistrationDate));

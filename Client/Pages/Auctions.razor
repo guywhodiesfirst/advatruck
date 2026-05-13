@@ -1,0 +1,183 @@
+@page "/auctions"
+@using Core.Models
+@using Core.Enums
+@using Client.Services
+@using Client.Components
+@using Microsoft.AspNetCore.Components.Authorization
+@inject AuctionLotApiService AuctionService
+@inject IDialogService DialogService
+@inject ISnackbar Snackbar
+
+<PageTitle>Auctions</PageTitle>
+
+<div class="d-flex align-center mb-4">
+    <MudText Typo="Typo.h4">Active Auctions</MudText>
+    <MudSpacer />
+    <AuthorizeView Roles="Dispatcher,Admin">
+        <Authorized>
+            <MudButton Variant="Variant.Filled"
+                       Color="Color.Success"
+                       StartIcon="@Icons.Material.Filled.Add"
+                       Class="mr-2"
+                       OnClick="@(() => OpenAuctionDialog(null))">
+                New Auction
+            </MudButton>
+        </Authorized>
+    </AuthorizeView>
+    <MudIconButton Icon="@Icons.Material.Filled.Refresh" OnClick="RefreshAsync" Color="Color.Primary" />
+</div>
+
+@if (_loading)
+{
+    <MudProgressCircular Indeterminate="true" Color="Color.Primary" />
+}
+else if (!_lots.Any())
+{
+    <MudPaper Class="pa-8 d-flex flex-column align-center justify-center" Elevation="0" Style="min-height: 300px;">
+        <MudIcon Icon="@Icons.Material.Filled.Gavel" Size="Size.Large" Color="Color.Default" Class="mb-4" Style="font-size: 64px; opacity: 0.3;" />
+        <MudText Typo="Typo.h6" Class="mb-2" Style="opacity: 0.6;">No active auctions</MudText>
+        <MudText Typo="Typo.body2" Color="Color.Default" Style="opacity: 0.45;">There are currently no active auction lots available.</MudText>
+        <AuthorizeView Roles="Dispatcher,Admin">
+            <Authorized>
+                <MudButton Variant="Variant.Filled"
+                           Color="Color.Primary"
+                           StartIcon="@Icons.Material.Filled.Add"
+                           Class="mt-4"
+                           OnClick="@(() => OpenAuctionDialog(null))">
+                    Create First Auction
+                </MudButton>
+            </Authorized>
+        </AuthorizeView>
+    </MudPaper>
+}
+else
+{
+    <MudGrid>
+        @foreach (var lot in _lots)
+        {
+            <MudItem xs="12" sm="6" md="4">
+                <MudCard Elevation="2" Class="pa-4 h-100 d-flex flex-column">
+                    <MudCardHeader>
+                        <CardHeaderContent>
+                            <div class="d-flex justify-space-between align-center">
+                                <MudText Typo="Typo.h6">Lot #@lot.Id.ToString().Substring(0, 8)</MudText>
+                                <MudChip T="string" Color="Color.Info" Size="Size.Small" Variant="Variant.Text">@lot.Status</MudChip>
+                            </div>
+                        </CardHeaderContent>
+                    </MudCardHeader>
+                    <MudCardContent Class="flex-grow-1">
+                        <MudText Typo="Typo.body2" Color="Color.Default">Current Best Rate:</MudText>
+                        <MudText Typo="Typo.h5" Color="Color.Primary">
+                            $@(lot.Bids.OrderByDescending(x => x.Rate).FirstOrDefault()?.Rate ?? 0)
+                        </MudText>
+                        <MudDivider Class="my-2" />
+                        <div class="d-flex justify-space-between">
+                            <div>
+                                <MudText Typo="Typo.caption" Color="Color.Default">Starts</MudText>
+                                <MudText Typo="Typo.body2">@lot.StartsAt.ToLocalTime().ToString("dd MMM HH:mm")</MudText>
+                            </div>
+                            <div>
+                                <MudText Typo="Typo.caption" Color="Color.Default">Ends</MudText>
+                                <MudText Typo="Typo.body2">@lot.EndsAt.ToLocalTime().ToString("dd MMM HH:mm")</MudText>
+                            </div>
+                        </div>
+                        @if (!string.IsNullOrWhiteSpace(lot.Note))
+                        {
+                            <MudText Typo="Typo.caption" Class="mt-2" Style="opacity: 0.6;">@lot.Note</MudText>
+                        }
+                    </MudCardContent>
+                    <MudCardActions>
+                        <MudButton Variant="Variant.Text" Color="Color.Primary" Href="@($"/auctions/{lot.Id}")">Details</MudButton>
+                        <MudSpacer />
+                        <AuthorizeView Roles="Dispatcher,Admin">
+                            <Authorized>
+                                <MudIconButton Icon="@Icons.Material.Filled.Edit"
+                                               Color="Color.Default"
+                                               Size="Size.Small"
+                                               OnClick="@(() => OpenAuctionDialog(lot))"
+                                               Title="Edit auction" />
+                            </Authorized>
+                        </AuthorizeView>
+                        <AuthorizeView Roles="Driver">
+                            <Authorized>
+                                <MudButton Variant="Variant.Filled"
+                                           Color="Color.Primary"
+                                           OnClick="@(() => OpenBidDialog(lot.Id))">
+                                    Place Bid
+                                </MudButton>
+                            </Authorized>
+                        </AuthorizeView>
+                    </MudCardActions>
+                </MudCard>
+            </MudItem>
+        }
+    </MudGrid>
+}
+
+@code {
+    private List<AuctionLotDto> _lots = new();
+    private bool _loading = true;
+
+    protected override async Task OnInitializedAsync()
+    {
+        try
+        {
+            _lots = await AuctionService.GetAllActiveAsync();
+        }
+        catch (Exception)
+        {
+            Snackbar.Add("Не вдалося завантажити аукціони", Severity.Error);
+        }
+        finally
+        {
+            _loading = false;
+        }
+    }
+
+    private async Task RefreshAsync()
+    {
+        _loading = true;
+        StateHasChanged();
+        try
+        {
+            _lots = await AuctionService.GetAllActiveAsync();
+        }
+        catch (Exception)
+        {
+            Snackbar.Add("Не вдалося оновити аукціони", Severity.Error);
+        }
+        finally
+        {
+            _loading = false;
+        }
+    }
+
+    private async Task OpenBidDialog(Guid lotId)
+    {
+        var parameters = new DialogParameters<BidDialog> { { x => x.AuctionLotId, lotId } };
+        var options = new DialogOptions { CloseButton = true, MaxWidth = MaxWidth.Small, FullWidth = true };
+
+        var dialog = await DialogService.ShowAsync<BidDialog>("New Bid", parameters, options);
+        var result = await dialog.Result;
+
+        if (result is { Canceled: false })
+        {
+            await RefreshAsync();
+        }
+    }
+
+    private async Task OpenAuctionDialog(AuctionLotDto? existing)
+    {
+        var parameters = new DialogParameters<AuctionLotDialog> { { x => x.ExistingLot, existing } };
+        var options = new DialogOptions { CloseButton = true, MaxWidth = MaxWidth.Small, FullWidth = true };
+
+        var title = existing is null ? "Create Auction" : "Edit Auction";
+        var dialog = await DialogService.ShowAsync<AuctionLotDialog>(title, parameters, options);
+        var result = await dialog.Result;
+
+        if (result is { Canceled: false })
+        {
+            await RefreshAsync();
+        }
+    }
+}

@@ -8,7 +8,4 @@ public class DispatcherCreateUpdateDto
 
     [Required]
     public Guid UserId { get; set; }
-
-    [MaxLength(500)]
-    public string? Note { get; set; }
 }

@@ -1,8 +1,11 @@
 namespace Core.Enums;
 
+using System.Text.Json.Serialization;
+
 /// <summary>
 /// Represents load location type.
 /// </summary>
+[JsonConverter(typeof(JsonStringEnumConverter))]
 public enum LoadLocationType
 {
     /// <summary>

@@ -22,6 +22,23 @@ namespace Data.Migrations
 
             NpgsqlModelBuilderExtensions.UseIdentityByDefaultColumns(modelBuilder);
 
+            modelBuilder.Entity("Core.Entities.Admin", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid");
+
+                    b.Property<Guid>("UserId")
+                        .HasColumnType("uuid");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("UserId")
+                        .IsUnique();
+
+                    b.ToTable("Admins");
+                });
+
             modelBuilder.Entity("Core.Entities.AuctionLot", b =>
                 {
                     b.Property<Guid>("Id")
@@ -181,7 +198,6 @@ namespace Data.Migrations
                         .HasColumnType("integer");
 
                     b.Property<string>("Note")
-                        .IsRequired()
                         .HasMaxLength(500)
                         .HasColumnType("character varying(500)");
 
@@ -444,6 +460,17 @@ namespace Data.Migrations
                     b.ToTable("AspNetUserTokens", (string)null);
                 });
 
+            modelBuilder.Entity("Core.Entities.Admin", b =>
+                {
+                    b.HasOne("Core.Identity.AppUser", "User")
+                        .WithOne("Admin")
+                        .HasForeignKey("Core.Entities.Admin", "UserId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("User");
+                });
+
             modelBuilder.Entity("Core.Entities.AuctionLot", b =>
                 {
                     b.HasOne("Core.Entities.Dispatcher", "DispatcherCreated")
@@ -572,7 +599,6 @@ namespace Data.Migrations
                                 .HasColumnType("integer");
 
                             b1.Property<string>("Note")
-                                .IsRequired()
                                 .HasColumnType("text");
 
                             b1.Property<DateTime>("Timestamp")
@@ -710,6 +736,8 @@ namespace Data.Migrations
 
             modelBuilder.Entity("Core.Identity.AppUser", b =>
                 {
+                    b.Navigation("Admin");
+
                     b.Navigation("Dispatcher");
 
                     b.Navigation("Driver");

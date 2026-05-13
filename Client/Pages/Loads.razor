@@ -1,0 +1,261 @@
+@page "/loads"
+@using Client.Components
+@using Core.Models
+@using Client.Services
+@using Microsoft.AspNetCore.Authorization
+@using Microsoft.AspNetCore.Components.Authorization
+@attribute [Authorize(Roles = "Dispatcher,Admin")]
+@inject LoadApiService LoadsService
+@inject IDialogService DialogService
+@inject ISnackbar Snackbar
+
+<PageTitle>Loads</PageTitle>
+
+<div class="d-flex align-center mb-4">
+    <MudText Typo="Typo.h4">Loads Management</MudText>
+    <MudSpacer />
+    <MudIconButton Icon="@Icons.Material.Filled.Refresh" 
+                   OnClick="RefreshAsync" 
+                   Color="Color.Inherit" 
+                   Class="ml-2" />
+</div>
+
+@if (_loading)
+{
+    <MudProgressLinear Color="Color.Primary" Indeterminate="true" Class="my-7" />
+}
+else
+{
+    <MudTable Items="_loads" Hover="true" Dense="true" Elevation="1">
+        <HeaderContent>
+            <MudTh></MudTh>
+            <MudTh>ID</MudTh>
+            <MudTh>Status</MudTh>
+            <MudTh>Dispatcher</MudTh>
+            <MudTh>Driver</MudTh>
+            <MudTh>Weight</MudTh>
+            <MudTh>Rate</MudTh>
+            <MudTh>Actions</MudTh>
+        </HeaderContent>
+        <RowTemplate>
+            <MudTd>
+                <MudIconButton Icon="@(context.ShowDetails ? Icons.Material.Filled.UnfoldLess : Icons.Material.Filled.UnfoldMore)" 
+                               Size="Size.Small" 
+                               OnClick="@(() => context.ShowDetails = !context.ShowDetails)" />
+            </MudTd>
+            <MudTd DataLabel="ID">@context.Id.ToString().Substring(0, 8)</MudTd>
+            <MudTd DataLabel="Status">
+                <MudChip T="string" Color="@GetStatusColor(context.LoadStatus)" Size="Size.Small" Variant="Variant.Text">
+                    @context.LoadStatus
+                </MudChip>
+            </MudTd>
+            <MudTd DataLabel="Dispatcher">@context.DispatcherName</MudTd>
+            <MudTd DataLabel="Driver">
+                @(string.IsNullOrWhiteSpace(context.DriverName) ? "Unassigned" : context.DriverName)
+            </MudTd>
+            <MudTd DataLabel="Weight">@context.CargoWeight kg</MudTd>
+            <MudTd DataLabel="Rate">
+                <MudText Color="Color.Success" Typo="Typo.body2" Class="fw-bold">₴@context.Rate</MudText>
+            </MudTd>
+            <MudTd DataLabel="Actions">
+                <MudMenu Icon="@Icons.Material.Filled.MoreVert" Size="Size.Small">
+                    <MudMenuItem Icon="@Icons.Material.Filled.Checklist">
+                        <MudMenu Label="Change Status" Placement="Placement.Left" AnchorOrigin="Origin.TopLeft" EndIcon="@Icons.Material.Filled.ChevronLeft">
+                            <MudMenuItem OnClick="@(() => UpdateStatusAsync(context.Id, Core.Enums.LoadStatus.Scheduled))">Scheduled</MudMenuItem>
+                            <MudMenuItem OnClick="@(() => UpdateStatusAsync(context.Id, Core.Enums.LoadStatus.Ongoing))">Ongoing</MudMenuItem>
+                            <MudMenuItem OnClick="@(() => UpdateStatusAsync(context.Id, Core.Enums.LoadStatus.Completed))">Completed</MudMenuItem>
+                            <MudMenuItem OnClick="@(() => UpdateStatusAsync(context.Id, Core.Enums.LoadStatus.Cancelled))">Cancelled</MudMenuItem>
+                        </MudMenu>
+                    </MudMenuItem>
+                    
+                    <MudMenuItem Icon="@Icons.Material.Filled.PersonAdd" OnClick="@(() => OpenAssignDriverDialog(context.Id))">
+                        Assign Driver
+                    </MudMenuItem>
+        
+                    <MudDivider DividerType="DividerType.Middle" Class="my-2"/>
+        
+                    <MudMenuItem Icon="@Icons.Material.Filled.Edit" OnClick="@(() => OpenLoadDialog(context))">Edit Full Load</MudMenuItem>
+                    <MudMenuItem Icon="@Icons.Material.Filled.Delete" Color="Color.Error" OnClick="@(() => DeleteLoadAsync(context.Id))">Delete</MudMenuItem>
+                </MudMenu>
+            </MudTd>
+        </RowTemplate>
+
+        <ChildRowContent>
+            @if (context.ShowDetails)
+            {
+                <MudTr>
+                    <td colspan="8">
+                        <MudCard Elevation="0" Class="pa-4 mud-bg-gray">
+                            <MudText Typo="Typo.subtitle2" Class="mb-2">Route Details</MudText>
+                            <MudTimeline TimelinePosition="TimelinePosition.Start">
+                                @foreach (var stop in context.LoadStops.OrderBy(s => s.Timestamp))
+                                {
+                                    <MudTimelineItem Color="@(stop.LoadLocationType == Core.Enums.LoadLocationType.Pickup ? Color.Primary : Color.Secondary)" Size="Size.Small">
+                                        <div class="d-flex flex-column">
+                                            <MudText Typo="Typo.caption" Style="opacity:0.6">@stop.LoadLocationType - @stop.Timestamp.ToLocalTime().ToString("g")</MudText>
+                                            <MudText Typo="Typo.body2">@stop.Address</MudText>
+                                        </div>
+                                    </MudTimelineItem>
+                                }
+                            </MudTimeline>
+                        </MudCard>
+                    </td>
+                </MudTr>
+            }
+        </ChildRowContent>
+        <PagerContent>
+            <MudTablePager />
+        </PagerContent>
+    </MudTable>
+
+    <AuthorizeView Roles="Dispatcher,Admin">
+        <Authorized>
+            <div class="d-flex justify-end mt-4">
+                <MudButton Variant="Variant.Filled" 
+                           Color="Color.Primary" 
+                           StartIcon="@Icons.Material.Filled.Add" 
+                           OnClick="@(() => OpenLoadDialog(null))"
+                           Size="Size.Large">
+                    Create New Load
+                </MudButton>
+            </div>
+        </Authorized>
+    </AuthorizeView>
+}
+
+@code {
+    private List<LoadWrapper> _loads = new();
+    private bool _loading = true;
+
+    public class LoadWrapper : LoadDto
+    {
+        public bool ShowDetails { get; set; }
+    }
+
+    protected override async Task OnInitializedAsync() => await RefreshAsync();
+
+    private async Task RefreshAsync()
+    {
+        _loading = true;
+        try
+        {
+            var data = await LoadsService.GetAllAsync();
+            _loads = data.Select(x => new LoadWrapper 
+            { 
+                Id = x.Id, 
+                LoadStatus = x.LoadStatus,
+                DispatcherName = x.DispatcherName,
+                DriverName = x.DriverName,
+                Rate = x.Rate,
+                CargoWeight = x.CargoWeight,
+                LoadStops = x.LoadStops,
+                Note = x.Note,
+                CargoHeight = x.CargoHeight,
+                CargoLength = x.CargoLength,
+                CargoWidth = x.CargoWidth,
+                DispatcherId = x.DispatcherId
+            }).ToList();
+        }
+        catch (Exception ex)
+        {
+            Snackbar.Add($"Error loading data: {ex.Message}", Severity.Error);
+        }
+        finally
+        {
+            _loading = false;
+        }
+    }
+
+    private async Task OpenLoadDialog(LoadDto? existing)
+    {
+        var parameters = new DialogParameters<LoadDialog> { { x => x.ExistingLoad, existing } };
+        var options = new DialogOptions { CloseButton = true, MaxWidth = MaxWidth.Medium, FullWidth = true };
+        
+        var title = existing == null ? "Create New Load" : "Edit Load";
+        
+        var dialog = await DialogService.ShowAsync<LoadDialog>(title, parameters, options);
+        var result = await dialog.Result;
+
+        if (result != null && !result.Canceled)
+        {
+            await RefreshAsync();
+        }
+    }
+    
+    private async Task OpenAssignDriverDialog(Guid loadId)
+    {
+        var options = new DialogOptions { CloseButton = true, MaxWidth = MaxWidth.ExtraSmall, FullWidth = true };
+        var dialog = await DialogService.ShowAsync<AssignDriverDialog>("Assign Driver", options);
+        var result = await dialog.Result;
+
+        if (result != null && !result.Canceled)
+        {
+            try
+            {
+                var driverId = (Guid)result.Data!;
+            
+                var dto = new LoadAssignDriverDto 
+                { 
+                    LoadId = loadId, 
+                    DriverId = driverId 
+                };
+
+                var success = await LoadsService.AssignDriverAsync(dto);
+            
+                if (success != null)
+                {
+                    Snackbar.Add("Driver assigned successfully", Severity.Success);
+                    await RefreshAsync();
+                }
+            }
+            catch (Exception ex)
+            {
+                Snackbar.Add($"Error assigning driver: {ex.Message}", Severity.Error);
+            }
+        }
+    }
+
+    private async Task DeleteLoadAsync(Guid id)
+    {
+        var confirm = await DialogService.ShowMessageBoxAsync("Warning", "Are you sure you want to delete this load?", "Delete", "Cancel");
+        if (confirm == true)
+        {
+            var success = await LoadsService.DeleteAsync(id);
+            if (success)
+            {
+                Snackbar.Add("Load deleted", Severity.Success);
+                await RefreshAsync();
+            }
+        }
+    }
+
+    private Color GetStatusColor(Core.Enums.LoadStatus status) => status switch
+    {
+        Core.Enums.LoadStatus.Scheduled => Color.Info,
+        Core.Enums.LoadStatus.Ongoing   => Color.Warning,
+        Core.Enums.LoadStatus.Completed => Color.Success,
+        Core.Enums.LoadStatus.Cancelled => Color.Error,
+        _ => Color.Default
+    };
+    
+    private async Task UpdateStatusAsync(Guid id, Core.Enums.LoadStatus newStatus)
+    {
+        try
+        {
+            var dto = new LoadStatusUpdateDto
+            {
+                LoadId = id, LoadStatus = newStatus
+            };
+            var loadDto = await LoadsService.UpdateStatusAsync(dto);
+            if (loadDto != null)
+            {
+                Snackbar.Add($"Status updated to {newStatus}", Severity.Success);
+                await RefreshAsync();
+            }
+        }
+        catch (Exception ex)
+        {
+            Snackbar.Add($"Error: {ex.Message}", Severity.Error);
+        }
+    }
+}

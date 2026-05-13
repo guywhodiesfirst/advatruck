@@ -1,0 +1,86 @@
+@using Core.Models
+@using Client.Services
+@inject BidApiService BidService
+@inject ISnackbar Snackbar
+
+<MudDialog>
+    <TitleContent>
+        <MudText Typo="Typo.h6">Place a Bid</MudText>
+    </TitleContent>
+    <DialogContent>
+        <MudNumericField @bind-Value="_bidRate" 
+                         Label="Your Rate" 
+                         HideSpinButtons="true"
+                         Variant="Variant.Outlined" 
+                         Adornment="Adornment.Start" 
+                         AdornmentIcon="@Icons.Material.Filled.AttachMoney" />
+        <MudTextField @bind-Value="_note" 
+                      Label="Note (Optional)" 
+                      Variant="Variant.Outlined" 
+                      Lines="3"
+                      Class="mt-4" />
+    </DialogContent>
+    <DialogActions>
+        <MudButton OnClick="Cancel">Cancel</MudButton>
+        <MudButton Color="Color.Primary" 
+                   Variant="Variant.Filled" 
+                   OnClick="SubmitBid" 
+                   Disabled="_processing">
+            @if (_processing)
+            {
+                <MudProgressCircular Class="ms-n1" Size="Size.Small" Indeterminate="true" />
+                <MudText Class="ms-2">Processing</MudText>
+            }
+            else
+            {
+                <MudText>Confirm Bid</MudText>
+            }
+        </MudButton>
+    </DialogActions>
+</MudDialog>
+
+@code {
+    [CascadingParameter] 
+    private IMudDialogInstance MudDialog { get; set; } = default!;
+
+    [Parameter] 
+    public Guid AuctionLotId { get; set; }
+
+    private decimal _bidRate;
+    private string? _note;
+    private bool _processing;
+
+    private void Cancel() => MudDialog.Cancel();
+
+    private async Task SubmitBid()
+    {
+        if (_bidRate <= 0)
+        {
+            Snackbar.Add("Rate must be greater than zero", Severity.Warning);
+            return;
+        }
+
+        _processing = true;
+        
+        var dto = new BidCreateUpdateDto 
+        { 
+            AuctionLotId = AuctionLotId, 
+            Rate = _bidRate,
+            Note = _note 
+        };
+
+        var result = await BidService.CreateAsync(dto);
+
+        if (result != null)
+        {
+            Snackbar.Add("Bid placed successfully!", Severity.Success);
+            MudDialog.Close(DialogResult.Ok(true));
+        }
+        else
+        {
+            Snackbar.Add("Failed to place bid. Please check your connection.", Severity.Error);
+        }
+        
+        _processing = false;
+    }
+}

@@ -12,5 +12,5 @@ public interface ITokenService
     /// <param name="user">User.</param>
     /// <param name="role">Role.</param>
     /// <returns>JWT token.</returns>
-    string CreateToken(AppUser user, string role);
+    Task<string> CreateToken(AppUser user, string role);
 }

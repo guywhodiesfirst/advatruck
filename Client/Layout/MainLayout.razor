@@ -1,0 +1,24 @@
+﻿@inherits LayoutComponentBase
+
+<MudThemeProvider />
+<MudPopoverProvider />
+<MudDialogProvider />
+<MudSnackbarProvider />
+
+<ErrorBoundary>
+    <ChildContent>
+        <MudLayout>
+
+            <MudAppBar Color="Color.Primary">
+                Advatruck TMS
+            </MudAppBar>
+
+            <NavMenu />
+
+            <MudMainContent Class="pa-4">
+                @Body
+            </MudMainContent>
+
+        </MudLayout>
+    </ChildContent>
+</ErrorBoundary>

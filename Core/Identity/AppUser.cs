@@ -17,4 +17,6 @@ public class AppUser : IdentityUser<Guid>
     public Driver? Driver { get; set; }
 
     public Dispatcher? Dispatcher { get; set; }
+
+    public Admin? Admin { get; set; }
 }
