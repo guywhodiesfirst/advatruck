@@ -4,28 +4,52 @@ using System.IdentityModel.Tokens.Jwt;
 using System.Security.Claims;
 using System.Text;
 using Business.Interfaces;
-using Core.Exceptions;
 using Core.Identity;
+using Data;
+using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
 using Microsoft.IdentityModel.Tokens;
 
-public class TokenService(IConfiguration config) : ITokenService
+public class TokenService(IConfiguration config, TmsDataContext context) : ITokenService
 {
-    public string CreateToken(AppUser user, string role)
+    public async Task<string> CreateToken(AppUser user, string role)
     {
         var claims = new List<Claim>
         {
-            new(ClaimTypes.NameIdentifier, user.Id.ToString()),
-            new(ClaimTypes.Email, user.Email!),
+            new(JwtRegisteredClaimNames.Sub, user.Id.ToString()),
+            new(JwtRegisteredClaimNames.Email, user.Email!),
             new(ClaimTypes.Role, role),
         };
 
-        var jwtKey = config["Jwt:Key"]
-            ?? throw new TmsException("JWT Key is missing in configuration");
-
-        if (jwtKey.Length < 64)
+        if (role == "Dispatcher")
         {
-            throw new TmsException("JWT Key is too short. Minimum 64 characters required.");
+            var dispatcher = await context.Dispatchers
+                .FirstOrDefaultAsync(d => d.UserId == user.Id);
+
+            if (dispatcher != null)
+            {
+                claims.Add(new Claim("dispatcher_id", dispatcher.Id.ToString()));
+            }
+        }
+        else if (role == "Driver")
+        {
+            var driver = await context.Drivers
+                .FirstOrDefaultAsync(d => d.UserId == user.Id);
+
+            if (driver != null)
+            {
+                claims.Add(new Claim("driver_id", driver.Id.ToString()));
+            }
+        }
+        else if (role == "Admin")
+        {
+            var admin = await context.Admins
+                .FirstOrDefaultAsync(d => d.UserId == user.Id);
+
+            if (admin != null)
+            {
+                claims.Add(new Claim("admin_id", admin.Id.ToString()));
+            }
         }
 
         var key = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(config["Jwt:Key"]!));

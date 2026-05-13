@@ -1,5 +1,9 @@
+using System.Net;
+using Core.Exceptions;
+
 namespace API.Controllers;
 
+using API.Extensions;
 using Asp.Versioning;
 using Business.Interfaces;
 using Core.Models;
@@ -9,7 +13,7 @@ using Microsoft.AspNetCore.Mvc;
 [ApiController]
 [Route("api/v{v:apiVersion}/loads")]
 [ApiVersion(TmsApiVersion.V1)]
-[Authorize] // Всі методи потребують авторизації
+[Authorize]
 public class LoadsController(ILoadService service) : ControllerBase
 {
     [HttpGet]
@@ -26,10 +30,19 @@ public class LoadsController(ILoadService service) : ControllerBase
         return Ok(result);
     }
 
-    [Authorize(Roles = "Dispatcher,Admin")]
+    [Authorize(Roles = "Dispatcher")]
     [HttpPost]
     public async Task<ActionResult<Guid>> Create([FromBody] LoadCreateUpdateDto dto, CancellationToken cancellationToken)
     {
+        var dispatcherId = User.GetDispatcherId();
+
+        if (dispatcherId == Guid.Empty)
+        {
+            throw new TmsException("Dispatcher profile not found", HttpStatusCode.Unauthorized);
+        }
+
+        dto.DispatcherId = dispatcherId;
+
         var id = await service.CreateAsync(dto, cancellationToken);
         return CreatedAtAction(nameof(GetById), new { v = "1", id }, id);
     }

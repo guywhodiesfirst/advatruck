@@ -1,0 +1,77 @@
+@using Core.Models
+@using Client.Services
+@inject DriverApiService DriverService
+@inject ISnackbar Snackbar
+
+<MudDialog>
+    <TitleContent>
+        <MudText Typo="Typo.h6">
+            <MudIcon Icon="@Icons.Material.Filled.PersonAdd" Class="mr-3 mb-n1" />
+            Assign Driver
+        </MudText>
+    </TitleContent>
+    <DialogContent>
+        <MudText Class="mb-4">Select a driver for this load from the list below.</MudText>
+        @if (_drivers == null)
+        {
+            <div class="d-flex justify-center py-4">
+                <MudProgressCircular Color="Color.Primary" Indeterminate="true" />
+            </div>
+        }
+        else if (!_drivers.Any())
+        {
+            <MudAlert Severity="Severity.Warning">No available drivers found.</MudAlert>
+        }
+        else
+        {
+            <MudSelect T="Guid?" 
+                       Label="Driver" 
+                       @bind-Value="_selectedDriverId" 
+                       AnchorOrigin="Origin.BottomCenter"
+                       Variant="Variant.Outlined"
+                       Clearable="true"
+                       Required="true">
+                @foreach (var driver in _drivers)
+                {
+                    <MudSelectItem Value="@((Guid?)driver.Id)">
+                        @driver.FullName <MudText Typo="Typo.caption" Color="Color.Secondary" Class="ml-2"></MudText>
+                    </MudSelectItem>
+                }
+            </MudSelect>
+        }
+    </DialogContent>
+    <DialogActions>
+        <MudButton OnClick="Cancel" Variant="Variant.Text">Cancel</MudButton>
+        <MudButton Color="Color.Primary" 
+                   OnClick="Submit" 
+                   Variant="Variant.Filled"
+                   Disabled="@(_selectedDriverId == null)">
+            Assign
+        </MudButton>
+    </DialogActions>
+</MudDialog>
+
+@code {
+    [CascadingParameter] IMudDialogInstance MudDialog { get; set; } = null!;
+
+    private List<DriverDto>? _drivers;
+    private Guid? _selectedDriverId;
+
+    protected override async Task OnInitializedAsync()
+    {
+        try
+        {
+            var data = await DriverService.GetAllAsync();
+            _drivers = data?.ToList() ?? new List<DriverDto>();
+        }
+        catch (Exception ex)
+        {
+            Snackbar.Add($"Failed to load drivers: {ex.Message}", Severity.Error);
+            _drivers = new List<DriverDto>();
+        }
+    }
+
+    private void Submit() => MudDialog.Close(DialogResult.Ok(_selectedDriverId));
+
+    private void Cancel() => MudDialog.Cancel();
+}

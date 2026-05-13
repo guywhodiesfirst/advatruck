@@ -71,7 +71,7 @@ public class LoadService(
     /// <inheritdoc />
     public async Task<LoadDto> UpdateAsync(LoadCreateUpdateDto dto, CancellationToken cancellationToken = default)
     {
-        var existingLoad = await loadRepository.GetByIdAsync(dto.Id, cancellationToken);
+        var existingLoad = await loadRepository.GetByIdAsync(dto.Id!.Value, cancellationToken);
         if (existingLoad == null)
         {
             throw new TmsException("Load not found", HttpStatusCode.NotFound);

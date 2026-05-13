@@ -5,11 +5,11 @@ using Core.Enums;
 
 public class LoadCreateUpdateDto
 {
-    public Guid Id { get; set; }
+    public Guid? Id { get; set; }
 
     public LoadStatus LoadStatus { get; set; }
 
-    public string Note { get; set; } = null!;
+    public string? Note { get; set; }
 
     [Required]
     [Range(0.01, double.MaxValue, ErrorMessage = "Rate must be greater than 0")]

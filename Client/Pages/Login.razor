@@ -1,0 +1,115 @@
+@page "/login"
+
+@using System.ComponentModel.DataAnnotations
+@using Core.Models
+@using Client.Services
+
+@inject AuthApiService AuthService
+@inject NavigationManager Navigation
+
+<PageTitle>Login</PageTitle>
+
+<div class="d-flex justify-center align-center" style="height: 100vh;">
+
+    <MudPaper
+        Class="pa-6"
+        Style="width: 400px;"
+        Elevation="4">
+
+        <MudText Typo="Typo.h4" Class="mb-4 text-center">
+            Login
+        </MudText>
+
+        <MudForm @ref="_form">
+
+            <MudTextField
+                @bind-Value="_model.Email"
+                Label="Email"
+                Variant="Variant.Outlined"
+                Required="true"
+                RequiredError="Email is required" />
+
+            <MudTextField
+                @bind-Value="_model.Password"
+                Label="Password"
+                Variant="Variant.Outlined"
+                InputType="InputType.Password"
+                Required="true"
+                RequiredError="Password is required"
+                Class="mt-4" />
+
+            @if (!string.IsNullOrWhiteSpace(_error))
+            {
+                <MudAlert
+                    Severity="Severity.Error"
+                    Dense="true"
+                    Class="mt-4">
+                    @_error
+                </MudAlert>
+            }
+
+            <MudButton
+                FullWidth="true"
+                Variant="Variant.Filled"
+                Color="Color.Primary"
+                Class="mt-6"
+                OnClick="LogIn">
+                Login
+            </MudButton>
+
+        </MudForm>
+
+    </MudPaper>
+
+</div>
+
+@code {
+
+    private MudForm? _form;
+
+    private string? _error;
+
+    private readonly LoginModel _model = new();
+
+    private async Task LogIn()
+    {
+        _error = null;
+
+        if (_form is null)
+        {
+            return;
+        }
+
+        await _form.ValidateAsync();
+
+        if (!_form.IsValid)
+        {
+            return;
+        }
+
+        var success = await AuthService.LoginAsync(
+            new LoginRequestDto
+            {
+                Email = _model.Email,
+                Password = _model.Password,
+            });
+
+        if (!success)
+        {
+            _error = "Invalid email or password";
+            return;
+        }
+
+        Navigation.NavigateTo("/");
+    }
+
+    private sealed class LoginModel
+    {
+        [Required]
+        [EmailAddress]
+        public string Email { get; set; } = string.Empty;
+
+        [Required]
+        public string Password { get; set; } = string.Empty;
+    }
+}

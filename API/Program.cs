@@ -1,4 +1,4 @@
-using System.Security.Claims;
+using System.IdentityModel.Tokens.Jwt;
 using System.Text;
 using System.Text.Json.Serialization;
 using API;
@@ -22,6 +22,8 @@ using RabbitMQ.Client;
 using Scalar.AspNetCore;
 using Serilog;
 using StackExchange.Redis;
+
+JwtSecurityTokenHandler.DefaultInboundClaimTypeMap.Clear();
 
 Log.Logger = new LoggerConfiguration()
     .WriteTo.Console()
@@ -106,9 +108,47 @@ try
                 ValidateIssuer = true,
                 ValidIssuer = builder.Configuration["Jwt:Issuer"],
                 ValidateAudience = false,
-                RoleClaimType = ClaimTypes.Role,
+                RoleClaimType = "http://schemas.microsoft.com/ws/2008/06/identity/claims/role",
+                NameClaimType = "http://schemas.xmlsoap.org/ws/2005/05/identity/claims/nameidentifier",
+            };
+
+            options.Events = new JwtBearerEvents
+            {
+                OnTokenValidated = context =>
+                {
+                    var claims = context.Principal?.Claims ??
+                                 [];
+                    Console.WriteLine("Token validated! Claims found:");
+                    foreach (var claim in claims)
+                    {
+                        Console.WriteLine($"{claim.Type}: {claim.Value}");
+                    }
+
+                    return Task.CompletedTask;
+                },
+                OnForbidden = _ =>
+                {
+                    Console.WriteLine("Forbidden error! User is authenticated but doesn't have the right role.");
+                    return Task.CompletedTask;
+                },
+                OnAuthenticationFailed = context =>
+                {
+                    Console.WriteLine($"Auth failed: {context.Exception.Message}");
+                    return Task.CompletedTask;
+                },
             };
         });
+
+    builder.Services.AddCors(options =>
+    {
+        options.AddPolicy("ClientPolicy", policy =>
+        {
+            policy
+                .AllowAnyOrigin()
+                .AllowAnyHeader()
+                .AllowAnyMethod();
+        });
+    });
 
     builder.Services.AddAutoMapper(_ => { }, typeof(MappingProfile));
 
@@ -120,6 +160,7 @@ try
     builder.Services.AddScoped<IDispatcherRepository, DispatcherRepository>();
     builder.Services.AddScoped<IAuctionLotRepository, AuctionLotRepository>();
     builder.Services.AddScoped<IBidRepository, BidRepository>();
+    builder.Services.AddScoped<IAdminRepository, AdminRepository>();
 
     builder.Services.AddScoped<IDriverService, DriverService>();
     builder.Services.AddScoped<IGeocodingService, NominatimService>();
@@ -131,6 +172,7 @@ try
     builder.Services.AddScoped<INotificationService, NotificationService>();
     builder.Services.AddScoped<IAuctionLotService, AuctionLotService>();
     builder.Services.AddScoped<IBidService, BidService>();
+    builder.Services.AddScoped<IAdminService, AdminService>();
 
     builder.Services.AddSingleton<IDriverSessionStore, DriverSessionStore>();
 
@@ -164,7 +206,10 @@ try
     builder.Services.AddOpenApi();
 
     var app = builder.Build();
+
     app.UseMiddleware<ExceptionHandlingMiddleware>();
+
+    app.UseCors("ClientPolicy");
 
     if (app.Environment.IsDevelopment())
     {

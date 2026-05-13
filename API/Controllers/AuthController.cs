@@ -61,6 +61,10 @@ public class AuthController(
         {
             user.Dispatcher = new Dispatcher { UserId = user.Id };
         }
+        else if (dto.Role.Equals("Admin", StringComparison.OrdinalIgnoreCase))
+        {
+            user.Admin = new Admin { UserId = user.Id };
+        }
 
         await userManager.UpdateAsync(user);
 
@@ -68,7 +72,7 @@ public class AuthController(
 
         return Ok(new AuthResponseDto(
             entityId,
-            tokenService.CreateToken(user, dto.Role)));
+            await tokenService.CreateToken(user, dto.Role)));
     }
 
     [HttpPost("login")]
@@ -93,10 +97,10 @@ public class AuthController(
 
         var roles = await userManager.GetRolesAsync(user);
         var role = roles.FirstOrDefault() ?? "User";
-        var entityId = user.Driver?.Id ?? user.Dispatcher?.Id ?? user.Id;
+        var entityId = user.Driver?.Id ?? user.Dispatcher?.Id ?? user.Admin?.Id ?? user.Id;
 
         return Ok(new AuthResponseDto(
             entityId,
-            tokenService.CreateToken(user, role)));
+            await tokenService.CreateToken(user, role)));
     }
 }

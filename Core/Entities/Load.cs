@@ -20,7 +20,7 @@ public class Load
     public decimal? DriverCharge { get; set; }
 
     [StringLength(500)]
-    public string Note { get; set; } = null!;
+    public string? Note { get; set; }
 
     public Guid? DriverId { get; set; }
 

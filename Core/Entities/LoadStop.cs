@@ -13,7 +13,7 @@ public class LoadStop
 
     public required Guid LoadId { get; set; }
 
-    public string Note { get; set; } = null!;
+    public string? Note { get; set; }
 
     public required GeoPoint Location { get; set; }
 }
