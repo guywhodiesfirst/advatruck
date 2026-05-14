@@ -47,6 +47,8 @@ public class AuctionLotService(
         try
         {
             var entity = mapper.Map<AuctionLot>(dto);
+            entity.StartsAt = DateTime.UtcNow;
+
             await repository.AddAsync(entity, cancellationToken);
             return entity.Id;
         }

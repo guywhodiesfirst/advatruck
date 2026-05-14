@@ -77,6 +77,9 @@
                             
                             <MudTextField @bind-Value="stop.Address" Label="Address" Required="true" Class="mb-2" />
                             
+                            @* ОСЬ ЦЕ ПОЛЕ ТРЕБА БУЛО ДОДАТИ *@
+                            <MudTextField @bind-Value="stop.Note" Label="Stop Note (Gate code, contact person, etc.)" Class="mb-2" />
+                            
                             <div class="d-flex ga-4">
                                 <MudDatePicker Label="Date" @bind-Date="@_stopDates[index]" Required="true" Editable="true" />
                                 <MudTimePicker Label="Time" @bind-Time="@_stopTimes[index]" Required="true" Editable="true" />
@@ -105,10 +108,10 @@
     private bool _isValid;
     private bool _submitting;
 
-    private LoadCreateUpdateDto _model = new() { LoadStops = new List<LoadStopDto>() };
+    private readonly LoadCreateUpdateDto _model = new() { LoadStops = new List<LoadStopDto>() };
     
-    private List<DateTime?> _stopDates = new();
-    private List<TimeSpan?> _stopTimes = new();
+    private readonly List<DateTime?> _stopDates = new();
+    private readonly List<TimeSpan?> _stopTimes = new();
 
     protected override async Task OnInitializedAsync()
     {
@@ -156,7 +159,8 @@
         { 
             LoadLocationType = type, 
             Location = new Core.Types.GeoPoint { Latitude = 0, Longitude = 0 },
-            Timestamp = DateTime.UtcNow
+            Timestamp = DateTime.UtcNow,
+            Note = string.Empty
         });
         _stopDates.Add(DateTime.Today);
         _stopTimes.Add(DateTime.Now.TimeOfDay);

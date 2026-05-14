@@ -3,6 +3,7 @@ namespace Bot.Services;
 using System.Net.Http.Headers;
 using System.Net.Http.Json;
 using System.Text.Json;
+using System.Text.Json.Serialization;
 using Bot.Interfaces;
 using Core.Exceptions;
 using Core.Models;
@@ -10,43 +11,35 @@ using Core.Types;
 using Microsoft.Extensions.Options;
 using Telegram.Bot.Types;
 
-/// <inheritdoc/>
 public class ApiClient(
     HttpClient http,
     IOptions<TelegramBotOptions> options) : IApiClient
 {
-    private readonly string _baseUrl =
-        $"{options.Value.BaseApiUrl}/api/v{options.Value.ApiVersion}";
+    private readonly string _baseUrl = $"{options.Value.BaseApiUrl}/api/v{options.Value.ApiVersion}";
+
+    private readonly JsonSerializerOptions _jsonOptions = new()
+    {
+        PropertyNameCaseInsensitive = true,
+        Converters = { new JsonStringEnumConverter() },
+    };
 
     /// <inheritdoc/>
     public async Task<AuthResponseDto?> LoginAsync(string email, string password)
     {
-        var response = await http.PostAsJsonAsync(
-            $"{_baseUrl}/auth/login",
-            new { Email = email, Password = password });
+        var response = await http.PostAsJsonAsync($"{_baseUrl}/auth/login", new { Email = email, Password = password });
 
         if (!response.IsSuccessStatusCode)
         {
             await HandleErrorResponse(response);
         }
 
-        return await response.Content.ReadFromJsonAsync<AuthResponseDto>();
+        return await response.Content.ReadFromJsonAsync<AuthResponseDto>(_jsonOptions);
     }
 
     /// <inheritdoc/>
     public async Task<DriverProfileDto?> GetProfileAsync(string token)
     {
-        using var request = new HttpRequestMessage(HttpMethod.Get, $"{_baseUrl}/drivers/me");
-        request.Headers.Authorization = new AuthenticationHeaderValue("Bearer", token);
-
-        var response = await http.SendAsync(request);
-
-        if (!response.IsSuccessStatusCode)
-        {
-            await HandleErrorResponse(response);
-        }
-
-        return await response.Content.ReadFromJsonAsync<DriverProfileDto>();
+        return await SendAuthenticatedRequestAsync<DriverProfileDto>(HttpMethod.Get, $"{_baseUrl}/drivers/me", token);
     }
 
     /// <inheritdoc/>
@@ -62,10 +55,38 @@ public class ApiClient(
             Timestamp = DateTime.UtcNow,
         };
 
-        using var request = new HttpRequestMessage(HttpMethod.Post, $"{_baseUrl}/drivers/{driverId}/locations");
-        request.Headers.Authorization = new AuthenticationHeaderValue("Bearer", token);
-        request.Content = JsonContent.Create(dto);
+        await SendAuthenticatedRequestAsync(HttpMethod.Post, $"{_baseUrl}/drivers/{driverId}/locations", token, dto);
+    }
 
+    /// <inheritdoc/>
+    public async Task<LoadDto?> GetLoadByIdAsync(Guid loadId, string token)
+    {
+        try
+        {
+            return await SendAuthenticatedRequestAsync<LoadDto>(HttpMethod.Get, $"{_baseUrl}/loads/{loadId}", token);
+        }
+        catch (TmsException ex) when (ex.StatusCode == System.Net.HttpStatusCode.NotFound)
+        {
+            return null;
+        }
+    }
+
+    private async Task<T?> SendAuthenticatedRequestAsync<T>(HttpMethod method, string url, string token, object? body = null)
+    {
+        using var request = CreateRequest(method, url, token, body);
+        var response = await http.SendAsync(request);
+
+        if (!response.IsSuccessStatusCode)
+        {
+            await HandleErrorResponse(response);
+        }
+
+        return await response.Content.ReadFromJsonAsync<T>(_jsonOptions);
+    }
+
+    private async Task SendAuthenticatedRequestAsync(HttpMethod method, string url, string token, object? body = null)
+    {
+        using var request = CreateRequest(method, url, token, body);
         var response = await http.SendAsync(request);
 
         if (!response.IsSuccessStatusCode)
@@ -74,18 +95,28 @@ public class ApiClient(
         }
     }
 
-    /// <summary>
-    /// Parses error response and throws exception.
-    /// </summary>
-    /// <param name="response">Error response.</param>
-    /// <exception cref="TmsException">TMS Exception.</exception>
+    private HttpRequestMessage CreateRequest(HttpMethod method, string url, string token, object? body = null)
+    {
+        var request = new HttpRequestMessage(method, url);
+        request.Headers.Authorization = new AuthenticationHeaderValue("Bearer", token);
+
+        if (body != null)
+        {
+            request.Content = JsonContent.Create(body, options: _jsonOptions);
+        }
+
+        return request;
+    }
+
     private static async Task HandleErrorResponse(HttpResponseMessage response)
     {
         string errorMessage;
         try
         {
             var errorData = await response.Content.ReadFromJsonAsync<JsonElement>();
-            errorMessage = errorData.GetProperty("error").GetString() ?? "Unknown API Error";
+            errorMessage = errorData.TryGetProperty("error", out var errorProp)
+                ? errorProp.GetString() ?? "Unknown API Error"
+                : "Unknown API Error";
         }
         catch
         {
@@ -93,32 +124,5 @@ public class ApiClient(
         }
 
         throw new TmsException(errorMessage, response.StatusCode);
-    }
-
-    /// <inheritdoc/>
-    public async Task<LoadDto?> GetLoadByIdAsync(Guid loadId, string token)
-    {
-        using var request = new HttpRequestMessage(HttpMethod.Get, $"{_baseUrl}/loads/{loadId}");
-        request.Headers.Authorization = new AuthenticationHeaderValue("Bearer", token);
-
-        var response = await http.SendAsync(request);
-
-        if (response.StatusCode == System.Net.HttpStatusCode.NotFound)
-        {
-            return null;
-        }
-
-        if (!response.IsSuccessStatusCode)
-        {
-            await HandleErrorResponse(response);
-        }
-
-        var options = new JsonSerializerOptions
-        {
-            PropertyNameCaseInsensitive = true,
-        };
-        options.Converters.Add(new System.Text.Json.Serialization.JsonStringEnumConverter());
-
-        return await response.Content.ReadFromJsonAsync<LoadDto>(options);
     }
 }

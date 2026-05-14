@@ -35,6 +35,7 @@ public class DriverEventConsumer(
 
             _channel.QueueBind(QueueName, ExchangeName, "driver.inactive");
             _channel.QueueBind(QueueName, ExchangeName, "load.assigned");
+            _channel.QueueBind(QueueName, ExchangeName, "load.deassigned");
             _channel.QueueBind(QueueName, ExchangeName, "load.canceled");
             _channel.QueueBind(QueueName, ExchangeName, "load.ongoing");
 
@@ -96,18 +97,24 @@ public class DriverEventConsumer(
             return;
         }
 
+        string shortId = @event.LoadId?.ToString().Split('-')[0] ?? "???";
+
         switch (@event.EventType)
         {
             case "load.assigned":
-                await SendLoadAssignmentAsync(chatId.Value, @event.LoadId, ct);
+                await SendLoadAssignmentAsync(chatId.Value, @event.LoadId, shortId, ct);
+                break;
+
+            case "load.deassigned":
+                await SendLoadDeassignmentAsync(chatId.Value, shortId, ct);
                 break;
 
             case "load.ongoing":
-                await SendTripStartedAsync(chatId.Value, @event.LoadId, ct);
+                await SendTripStartedAsync(chatId.Value, @event.LoadId, shortId, ct);
                 break;
 
             case "load.canceled":
-                await SendLoadCancellationAsync(chatId.Value, ct);
+                await SendLoadCancellationAsync(chatId.Value, shortId, ct);
                 break;
 
             case "driver.inactive":
@@ -142,46 +149,40 @@ public class DriverEventConsumer(
             cancellationToken: ct);
     }
 
-    private async Task SendLoadAssignmentAsync(long chatId, Guid? loadId, CancellationToken ct)
+    private async Task SendLoadAssignmentAsync(long chatId, Guid? loadId, string shortId, CancellationToken ct)
     {
-        const string text = "📦 *Нове замовлення призначено\\!*\n\n" +
-                            "Диспетчер додав вам новий рейс\\. Натисніть кнопку нижче, щоб переглянути деталі\\.";
+        string text = $"📦 *Призначено новий вантаж: #{shortId}*\n\n" +
+                      "Диспетчер додав вам новий рейс\\. Натисніть кнопку нижче, щоб переглянути деталі\\.";
 
         var keyboard = KeyboardLayout.LoadDetailsKeyboard(loadId);
 
-        await bot.SendMessage(
-            chatId: chatId,
-            text: text,
-            parseMode: ParseMode.MarkdownV2,
-            replyMarkup: keyboard,
-            cancellationToken: ct);
+        await bot.SendMessage(chatId, text, parseMode: ParseMode.MarkdownV2, replyMarkup: keyboard, cancellationToken: ct);
     }
 
-    private async Task SendTripStartedAsync(long chatId, Guid? loadId, CancellationToken ct)
+    private async Task SendLoadDeassignmentAsync(long chatId, string shortId, CancellationToken ct)
     {
-        const string text = "🚀 *Час вирушати\\!*\n\n" +
-                            "Ваш запланований рейс тепер активний\\. Натисніть кнопку нижче, щоб відкрити деталі та розпочати навігацію\\.";
+        string text = $"🔄 *Зміна планів: #{shortId}*\n\n" +
+                      "Вас було знято з виконання цього рейсу диспетчером\\. Вантаж більше не закріплений за вами\\.";
+
+        await bot.SendMessage(chatId, text, parseMode: ParseMode.MarkdownV2, cancellationToken: ct);
+    }
+
+    private async Task SendTripStartedAsync(long chatId, Guid? loadId, string shortId, CancellationToken ct)
+    {
+        string text = $"🚀 *Час вирушати: #{shortId}*\n\n" +
+                      "Ваш запланований рейс тепер активний\\. Відкрийте деталі, щоб розпочати навігацію та звітність\\.";
 
         var keyboard = KeyboardLayout.LoadDetailsKeyboard(loadId);
 
-        await bot.SendMessage(
-            chatId: chatId,
-            text: text,
-            parseMode: ParseMode.MarkdownV2,
-            replyMarkup: keyboard,
-            cancellationToken: ct);
+        await bot.SendMessage(chatId, text, parseMode: ParseMode.MarkdownV2, replyMarkup: keyboard, cancellationToken: ct);
     }
 
-    private async Task SendLoadCancellationAsync(long chatId, CancellationToken ct)
+    private async Task SendLoadCancellationAsync(long chatId, string shortId, CancellationToken ct)
     {
-        const string text = "❌ *Вантаж скасовано*\n\n" +
-                            "Поточний рейс було скасовано диспетчером\\. Очікуйте на нові замовлення\\.";
+        string text = $"❌ *Вантаж скасовано: #{shortId}*\n\n" +
+                      "Цей рейс було скасовано диспетчером\\. Будь ласка, очікуйте на нові замовлення\\.";
 
-        await bot.SendMessage(
-            chatId: chatId,
-            text: text,
-            parseMode: ParseMode.MarkdownV2,
-            cancellationToken: ct);
+        await bot.SendMessage(chatId, text, parseMode: ParseMode.MarkdownV2, cancellationToken: ct);
     }
 
     public override void Dispose()

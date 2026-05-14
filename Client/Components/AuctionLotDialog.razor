@@ -2,6 +2,7 @@
 @using Client.Services
 @using Microsoft.AspNetCore.Components.Authorization
 @inject AuctionLotApiService AuctionService
+@inject LoadApiService LoadService
 @inject ISnackbar Snackbar
 @inject AuthenticationStateProvider AuthStateProvider
 
@@ -16,58 +17,66 @@
         <MudForm @ref="_form" @bind-IsValid="_isValid">
             <MudGrid>
                 <MudItem xs="12">
-                    <MudTextField T="Guid"
-                                  Label="Load ID"
-                                  @bind-Value="_model.LoadId"
-                                  Required="true"
-                                  RequiredError="Load ID is required"
-                                  Converter="_guidConverter" />
+                    @if (IsEditMode)
+                    {
+                        <MudText Typo="Typo.caption" Class="mud-text-secondary ml-1">Associated Load Info</MudText>
+                        <MudPaper Variant="Variant.Outlined" Class="pa-3 mt-1">
+                            @if (_currentLoad == null)
+                            {
+                                <MudProgressCircular Size="Size.Small" Indeterminate="true" />
+                            }
+                            else
+                            {
+                                <MudText Typo="Typo.body2">
+                                    <b>ID:</b> @_currentLoad.Id.ToString().Substring(0, 8) | <b>Rate:</b> ₴@_currentLoad.Rate
+                                </MudText>
+                                <MudText Typo="Typo.caption" Style="display: block;">
+                                    <b>Pickup:</b> @_currentLoad.LoadStops.First().Address
+                                </MudText>
+                                <MudText Typo="Typo.caption" Style="display: block;">
+                                    <b>Delivery:</b> @_currentLoad.LoadStops.Last().Address
+                                </MudText>
+                            }
+                        </MudPaper>
+                    }
+                    else
+                    {
+                        <MudSelect T="Guid" Label="Select Load" @bind-Value="_model.LoadId" Required="true" Variant="Variant.Outlined">
+                            @if (_availableLoads == null)
+                            {
+                                <MudProgressCircular Size="Size.Small" Indeterminate="true" />
+                            }
+                            else
+                            {
+                                @foreach (var load in _availableLoads)
+                                {
+                                    <MudSelectItem Value="@load.Id">
+                                        ID: @load.Id.ToString().Substring(0,8) | Rate: ₴@load.Rate 
+                                        | 1st Pickup: @load.LoadStops.First().Address | Last Delivery : @load.LoadStops.Last().Address
+                                    </MudSelectItem>
+                                }
+                            }
+                        </MudSelect>
+                    }
                 </MudItem>
 
                 <MudItem xs="12" sm="6">
-                    <MudDatePicker Label="Start Date"
-                                   @bind-Date="_startDate"
-                                   Required="true"
-                                   MinDate="DateTime.Today" />
+                    <MudDatePicker Label="End Date" @bind-Date="_endDate" Required="true" MinDate="DateTime.Today" Variant="Variant.Outlined" />
                 </MudItem>
                 <MudItem xs="12" sm="6">
-                    <MudTimePicker Label="Start Time"
-                                   @bind-Time="_startTime"
-                                   Required="true" />
-                </MudItem>
-
-                <MudItem xs="12" sm="6">
-                    <MudDatePicker Label="End Date"
-                                   @bind-Date="_endDate"
-                                   Required="true"
-                                   MinDate="_startDate" />
-                </MudItem>
-                <MudItem xs="12" sm="6">
-                    <MudTimePicker Label="End Time"
-                                   @bind-Time="_endTime"
-                                   Required="true" />
+                    <MudTimePicker Label="End Time" @bind-Time="_endTime" Required="true" Variant="Variant.Outlined" />
                 </MudItem>
 
                 <MudItem xs="12">
-                    <MudTextField T="string"
-                                  Label="Note (optional)"
-                                  @bind-Value="_model.Note"
-                                  Lines="3"
-                                  MaxLength="500" />
+                    <MudTextField T="string" Label="Note (optional)" @bind-Value="_model.Note" Lines="3" MaxLength="500" Variant="Variant.Outlined" />
                 </MudItem>
             </MudGrid>
         </MudForm>
     </DialogContent>
     <DialogActions>
         <MudButton OnClick="Cancel" Variant="Variant.Text">Cancel</MudButton>
-        <MudButton Color="Color.Primary"
-                   Variant="Variant.Filled"
-                   OnClick="SubmitAsync"
-                   Disabled="@_submitting">
-            @if (_submitting)
-            {
-                <MudProgressCircular Size="Size.Small" Indeterminate="true" Class="mr-2" />
-            }
+        <MudButton Color="Color.Primary" Variant="Variant.Filled" OnClick="SubmitAsync" Disabled="@_submitting">
+            @if (_submitting) { <MudProgressCircular Size="Size.Small" Indeterminate="true" Class="mr-2" /> }
             @(IsEditMode ? "Save Changes" : "Create")
         </MudButton>
     </DialogActions>
@@ -75,24 +84,19 @@
 
 @code {
     [CascadingParameter] private IMudDialogInstance MudDialog { get; set; } = null!;
+    
     [Parameter] public AuctionLotDto? ExistingLot { get; set; }
 
     private bool IsEditMode => ExistingLot is not null;
     private MudForm _form = null!;
     private bool _isValid;
     private bool _submitting;
+    private List<LoadDto>? _availableLoads;
+    private LoadDto? _currentLoad;
 
     private AuctionLotCreateUpdateDto _model = new();
-
-    private DateTime? _startDate;
-    private TimeSpan? _startTime;
     private DateTime? _endDate;
     private TimeSpan? _endTime;
-
-    private IConverter<Guid, string?> _guidConverter = Conversions.From(
-        (Guid g) => g == Guid.Empty ? string.Empty : g.ToString(),
-        s => Guid.TryParse(s, out var g) ? g : Guid.Empty
-    );
 
     protected override async Task OnInitializedAsync()
     {
@@ -103,9 +107,11 @@
             _model.DispatcherCreatedId = ExistingLot.DispatcherCreatedId;
             _model.Note = ExistingLot.Note;
 
-            var localStart = ExistingLot.StartsAt.ToLocalTime();
-            _startDate = localStart.Date;
-            _startTime = localStart.TimeOfDay;
+            try 
+            {
+                _currentLoad = await LoadService.GetByIdAsync(ExistingLot.LoadId);
+            }
+            catch { Snackbar.Add("Failed to fetch load details", Severity.Warning); }
 
             var localEnd = ExistingLot.EndsAt.ToLocalTime();
             _endDate = localEnd.Date;
@@ -113,42 +119,27 @@
         }
         else
         {
+            try 
+            {
+                var loads = await LoadService.GetAllAsync();
+                _availableLoads = loads.Where(l => l.LoadStatus == Core.Enums.LoadStatus.Scheduled).ToList();
+            }
+            catch { Snackbar.Add("Failed to fetch loads", Severity.Error); }
+
             var authState = await AuthStateProvider.GetAuthenticationStateAsync();
-            var userIdClaim = authState.User.FindFirst(c =>
-                c.Type == "sub" ||
-                c.Type == "nameid" ||
-                c.Type == System.Security.Claims.ClaimTypes.NameIdentifier);
+            var userIdClaim = authState.User.FindFirst(System.Security.Claims.ClaimTypes.NameIdentifier);
 
             if (userIdClaim is not null && Guid.TryParse(userIdClaim.Value, out var uid))
                 _model.DispatcherCreatedId = uid;
-
-            _startDate = DateTime.Today;
-            _startTime = DateTime.Now.TimeOfDay;
         }
     }
 
     private async Task SubmitAsync()
     {
         await _form.ValidateAsync();
-        if (!_isValid) return;
+        if (!_isValid || _endDate == null || _endTime == null) return;
 
-        if (_startDate == null || _startTime == null || _endDate == null || _endTime == null)
-        {
-            Snackbar.Add("Please select both date and time", Severity.Warning);
-            return;
-        }
-
-        var finalStartsAt = _startDate.Value.Add(_startTime.Value);
-        var finalEndsAt = _endDate.Value.Add(_endTime.Value);
-
-        if (finalEndsAt <= finalStartsAt)
-        {
-            Snackbar.Add("End time must be after start time", Severity.Warning);
-            return;
-        }
-
-        _model.StartsAt = finalStartsAt.ToUniversalTime();
-        _model.EndsAt = finalEndsAt.ToUniversalTime();
+        _model.EndsAt = _endDate.Value.Add(_endTime.Value).ToUniversalTime();
 
         _submitting = true;
         try
@@ -156,30 +147,16 @@
             if (IsEditMode)
             {
                 var updated = await AuctionService.UpdateAsync(_model);
-                if (updated is not null)
-                {
-                    Snackbar.Add("Auction updated successfully", Severity.Success);
-                    MudDialog.Close(DialogResult.Ok(updated));
-                }
+                MudDialog.Close(DialogResult.Ok(updated));
             }
             else
             {
                 var id = await AuctionService.CreateAsync(_model);
-                if (id is not null)
-                {
-                    Snackbar.Add("Auction created successfully", Severity.Success);
-                    MudDialog.Close(DialogResult.Ok(id));
-                }
+                MudDialog.Close(DialogResult.Ok(id));
             }
         }
-        catch (Exception)
-        {
-            Snackbar.Add("Communication error with server", Severity.Error);
-        }
-        finally
-        {
-            _submitting = false;
-        }
+        catch (Exception) { Snackbar.Add("Operation failed", Severity.Error); }
+        finally { _submitting = false; }
     }
 
     private void Cancel() => MudDialog.Cancel();

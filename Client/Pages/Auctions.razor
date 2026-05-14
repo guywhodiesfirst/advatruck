@@ -7,144 +7,182 @@
 @inject AuctionLotApiService AuctionService
 @inject IDialogService DialogService
 @inject ISnackbar Snackbar
+@inject NavigationManager NavManager
+@inject AuthenticationStateProvider AuthStateProvider
 
 <PageTitle>Auctions</PageTitle>
 
-<div class="d-flex align-center mb-4">
-    <MudText Typo="Typo.h4">Active Auctions</MudText>
-    <MudSpacer />
-    <AuthorizeView Roles="Dispatcher,Admin">
-        <Authorized>
-            <MudButton Variant="Variant.Filled"
-                       Color="Color.Success"
-                       StartIcon="@Icons.Material.Filled.Add"
-                       Class="mr-2"
-                       OnClick="@(() => OpenAuctionDialog(null))">
-                New Auction
-            </MudButton>
-        </Authorized>
-    </AuthorizeView>
-    <MudIconButton Icon="@Icons.Material.Filled.Refresh" OnClick="RefreshAsync" Color="Color.Primary" />
-</div>
-
-@if (_loading)
-{
-    <MudProgressCircular Indeterminate="true" Color="Color.Primary" />
-}
-else if (!_lots.Any())
-{
-    <MudPaper Class="pa-8 d-flex flex-column align-center justify-center" Elevation="0" Style="min-height: 300px;">
-        <MudIcon Icon="@Icons.Material.Filled.Gavel" Size="Size.Large" Color="Color.Default" Class="mb-4" Style="font-size: 64px; opacity: 0.3;" />
-        <MudText Typo="Typo.h6" Class="mb-2" Style="opacity: 0.6;">No active auctions</MudText>
-        <MudText Typo="Typo.body2" Color="Color.Default" Style="opacity: 0.45;">There are currently no active auction lots available.</MudText>
+<MudContainer MaxWidth="MaxWidth.Large" Class="pt-16">
+    <div class="d-flex align-center mb-6">
+        <MudText Typo="Typo.h4">Active Auctions</MudText>
+        <MudSpacer />
         <AuthorizeView Roles="Dispatcher,Admin">
             <Authorized>
                 <MudButton Variant="Variant.Filled"
-                           Color="Color.Primary"
+                           Color="Color.Success"
                            StartIcon="@Icons.Material.Filled.Add"
-                           Class="mt-4"
+                           Class="mr-2"
                            OnClick="@(() => OpenAuctionDialog(null))">
-                    Create First Auction
+                    New Auction
                 </MudButton>
             </Authorized>
         </AuthorizeView>
-    </MudPaper>
-}
-else
-{
-    <MudGrid>
-        @foreach (var lot in _lots)
-        {
-            <MudItem xs="12" sm="6" md="4">
-                <MudCard Elevation="2" Class="pa-4 h-100 d-flex flex-column">
-                    <MudCardHeader>
-                        <CardHeaderContent>
+        <MudIconButton Icon="@Icons.Material.Filled.Refresh" OnClick="RefreshAsync" Color="Color.Primary" />
+    </div>
+
+    @if (_loading)
+    {
+        <div class="d-flex justify-center mt-10">
+            <MudProgressCircular Indeterminate="true" Color="Color.Primary" Size="Size.Large" />
+        </div>
+    }
+    else if (!_lots.Any())
+    {
+        <MudPaper Class="pa-12 d-flex flex-column align-center justify-center" Elevation="0" Style="min-height: 400px; background: none;">
+            <MudIcon Icon="@Icons.Material.Filled.Gavel" Color="Color.Default" Class="mb-4" Style="font-size: 80px; opacity: 0.2;" />
+            <MudText Typo="Typo.h5" Class="mb-2" Style="opacity: 0.5;">No active auctions</MudText>
+            <MudText Typo="Typo.body1" Align="Align.Center" Style="opacity: 0.4; max-width: 400px;">
+                There are currently no active auction lots available for bidding.
+            </MudText>
+            <AuthorizeView Roles="Dispatcher,Admin">
+                <Authorized>
+                    <MudButton Variant="Variant.Filled"
+                               Color="Color.Primary"
+                               StartIcon="@Icons.Material.Filled.Add"
+                               Class="mt-6"
+                               OnClick="@(() => OpenAuctionDialog(null))">
+                        Create First Auction
+                    </MudButton>
+                </Authorized>
+            </AuthorizeView>
+        </MudPaper>
+    }
+    else
+    {
+        <MudGrid>
+            @foreach (var lot in _lots)
+            {
+                <MudItem xs="12" sm="6" md="4">
+                    <MudCard Elevation="3" Class="pa-2 h-100 d-flex flex-column" Style="border-radius: 12px;">
+                        <MudCardHeader>
+                            <CardHeaderContent>
+                                <div class="d-flex justify-space-between align-start">
+                                    <div class="d-flex flex-column">
+                                        <MudLink href="@($"/loads/{lot.LoadId}")" 
+                                                 Underline="Underline.Hover" 
+                                                 Color="Color.Primary" 
+                                                 Typo="Typo.h6" 
+                                                 Style="font-weight: bold;">
+                                            Lot #@lot.Id.ToString().Substring(0, 8)
+                                        </MudLink>
+                                        <MudText Typo="Typo.caption" Style="opacity: 0.6;">Linked to Load specs</MudText>
+                                    </div>
+                                    <MudChip T="string" 
+                                             Color="@(lot.Status == AuctionStatus.Active ? Color.Info : Color.Default)" 
+                                             Size="Size.Small" 
+                                             Variant="Variant.Filled">
+                                        @lot.Status
+                                    </MudChip>
+                                </div>
+                            </CardHeaderContent>
+                        </MudCardHeader>
+                        
+                        <MudCardContent Class="flex-grow-1 pt-0">
+                            <MudText Typo="Typo.caption" Color="Color.Default" Style="font-size: 0.75rem; text-transform: uppercase; letter-spacing: 1px;">Current Best Rate</MudText>
+                            <MudText Typo="Typo.h5" Color="Color.Primary" Class="mb-4" Style="font-weight: 700;">
+                                @(lot.Bids.Any() ? $"₴{lot.Bids.OrderBy(x => x.Rate).First().Rate}" : "No bids yet")
+                            </MudText>
+                            
+                            <MudDivider Class="mb-4" />
+                            
                             <div class="d-flex justify-space-between align-center">
-                                <MudText Typo="Typo.h6">Lot #@lot.Id.ToString().Substring(0, 8)</MudText>
-                                <MudChip T="string" Color="Color.Info" Size="Size.Small" Variant="Variant.Text">@lot.Status</MudChip>
+                                <div class="d-flex align-center">
+                                    <MudIcon Icon="@Icons.Material.Filled.AccessTime" Size="Size.Small" Class="mr-1" Style="opacity: 0.5;"/>
+                                    <div>
+                                        <MudText Typo="Typo.caption" Style="display: block; line-height: 1;">Ends</MudText>
+                                        <MudText Typo="Typo.body2">@lot.EndsAt.ToLocalTime().ToString("dd MMM, HH:mm")</MudText>
+                                    </div>
+                                </div>
+                                <div class="text-right">
+                                    <MudText Typo="Typo.caption" Style="display: block; line-height: 1;">Bids Count</MudText>
+                                    <MudText Typo="Typo.body2">@lot.Bids.Count</MudText>
+                                </div>
                             </div>
-                        </CardHeaderContent>
-                    </MudCardHeader>
-                    <MudCardContent Class="flex-grow-1">
-                        <MudText Typo="Typo.body2" Color="Color.Default">Current Best Rate:</MudText>
-                        <MudText Typo="Typo.h5" Color="Color.Primary">
-                            $@(lot.Bids.OrderByDescending(x => x.Rate).FirstOrDefault()?.Rate ?? 0)
-                        </MudText>
-                        <MudDivider Class="my-2" />
-                        <div class="d-flex justify-space-between">
-                            <div>
-                                <MudText Typo="Typo.caption" Color="Color.Default">Starts</MudText>
-                                <MudText Typo="Typo.body2">@lot.StartsAt.ToLocalTime().ToString("dd MMM HH:mm")</MudText>
-                            </div>
-                            <div>
-                                <MudText Typo="Typo.caption" Color="Color.Default">Ends</MudText>
-                                <MudText Typo="Typo.body2">@lot.EndsAt.ToLocalTime().ToString("dd MMM HH:mm")</MudText>
-                            </div>
-                        </div>
-                        @if (!string.IsNullOrWhiteSpace(lot.Note))
-                        {
-                            <MudText Typo="Typo.caption" Class="mt-2" Style="opacity: 0.6;">@lot.Note</MudText>
-                        }
-                    </MudCardContent>
-                    <MudCardActions>
-                        <MudButton Variant="Variant.Text" Color="Color.Primary" Href="@($"/auctions/{lot.Id}")">Details</MudButton>
-                        <MudSpacer />
-                        <AuthorizeView Roles="Dispatcher,Admin">
-                            <Authorized>
-                                <MudIconButton Icon="@Icons.Material.Filled.Edit"
-                                               Color="Color.Default"
-                                               Size="Size.Small"
-                                               OnClick="@(() => OpenAuctionDialog(lot))"
-                                               Title="Edit auction" />
-                            </Authorized>
-                        </AuthorizeView>
-                        <AuthorizeView Roles="Driver">
-                            <Authorized>
-                                <MudButton Variant="Variant.Filled"
-                                           Color="Color.Primary"
-                                           OnClick="@(() => OpenBidDialog(lot.Id))">
-                                    Place Bid
-                                </MudButton>
-                            </Authorized>
-                        </AuthorizeView>
-                    </MudCardActions>
-                </MudCard>
-            </MudItem>
-        }
-    </MudGrid>
-}
+                        </MudCardContent>
+                        
+                        <MudCardActions Class="pb-4 px-4">
+                            <MudButton Variant="Variant.Outlined" 
+                                       Color="Color.Primary" 
+                                       Size="Size.Small"
+                                       OnClick="@(() => NavManager.NavigateTo($"/auctions/{lot.Id}"))">
+                                Details
+                            </MudButton>
+                            
+                            <MudSpacer />
+
+                            <AuthorizeView Roles="Dispatcher,Admin">
+                                <Authorized>
+                                    @if (lot.Status == AuctionStatus.Active)
+                                    {
+                                        <MudTooltip Text="Finish Auction">
+                                            <MudIconButton Icon="@Icons.Material.Filled.Stop" 
+                                                           Color="Color.Error" 
+                                                           Size="Size.Small" 
+                                                           OnClick="@(() => HandleStatusChange(lot.Id, AuctionStatus.Finished))" />
+                                        </MudTooltip>
+                                    }
+                                    else
+                                    {
+                                        <MudTooltip Text="Activate Auction">
+                                            <MudIconButton Icon="@Icons.Material.Filled.PlayArrow" 
+                                                           Color="Color.Success" 
+                                                           Size="Size.Small" 
+                                                           OnClick="@(() => HandleStatusChange(lot.Id, AuctionStatus.Active))" />
+                                        </MudTooltip>
+                                    }
+                                    
+                                    <MudIconButton Icon="@Icons.Material.Filled.Edit"
+                                                   Color="Color.Default"
+                                                   Size="Size.Small"
+                                                   OnClick="@(() => OpenAuctionDialog(lot))" />
+                                </Authorized>
+                            </AuthorizeView>
+
+                            <AuthorizeView Roles="Driver">
+                                <Authorized>
+                                    <MudButton Variant="Variant.Filled" 
+                                               Color="Color.Primary"
+                                               StartIcon="@Icons.Material.Filled.Gavel"
+                                               Disabled="@(lot.Status == AuctionStatus.Finished)"
+                                               OnClick="@(() => OpenBidDialog(lot))">
+                                        Bid
+                                    </MudButton>
+                                </Authorized>
+                            </AuthorizeView>
+                        </MudCardActions>
+                    </MudCard>
+                </MudItem>
+            }
+        </MudGrid>
+    }
+</MudContainer>
 
 @code {
     private List<AuctionLotDto> _lots = new();
     private bool _loading = true;
 
-    protected override async Task OnInitializedAsync()
-    {
-        try
-        {
-            _lots = await AuctionService.GetAllActiveAsync();
-        }
-        catch (Exception)
-        {
-            Snackbar.Add("Не вдалося завантажити аукціони", Severity.Error);
-        }
-        finally
-        {
-            _loading = false;
-        }
-    }
+    protected override async Task OnInitializedAsync() => await RefreshAsync();
 
     private async Task RefreshAsync()
     {
         _loading = true;
-        StateHasChanged();
         try
         {
             _lots = await AuctionService.GetAllActiveAsync();
         }
-        catch (Exception)
+        catch (Exception ex)
         {
-            Snackbar.Add("Не вдалося оновити аукціони", Severity.Error);
+            Snackbar.Add($"Error loading auctions: {ex.Message}", Severity.Error);
         }
         finally
         {
@@ -152,18 +190,57 @@ else
         }
     }
 
-    private async Task OpenBidDialog(Guid lotId)
+    private async Task HandleStatusChange(Guid id, AuctionStatus newStatus)
     {
-        var parameters = new DialogParameters<BidDialog> { { x => x.AuctionLotId, lotId } };
-        var options = new DialogOptions { CloseButton = true, MaxWidth = MaxWidth.Small, FullWidth = true };
+        var action = newStatus == AuctionStatus.Finished ? "finish" : "re-activate";
+        bool? confirm = await DialogService.ShowMessageBoxAsync("Confirm", $"Are you sure you want to {action} this auction?", "Yes", "No");
+        
+        if (confirm == true)
+        {
+            try
+            {
+                var dto = new AuctionLotStatusUpdateDto { Status = newStatus };
+                var result = await AuctionService.UpdateStatusAsync(id, dto);
+                if (result != null)
+                {
+                    Snackbar.Add($"Auction status updated to {newStatus}", Severity.Success);
+                    await RefreshAsync();
+                }
+            }
+            catch (Exception ex)
+            {
+                Snackbar.Add($"Status update failed: {ex.Message}", Severity.Error);
+            }
+        }
+    }
 
-        var dialog = await DialogService.ShowAsync<BidDialog>("New Bid", parameters, options);
+    private async Task OpenBidDialog(AuctionLotDto lot)
+    {
+        var authState = await AuthStateProvider.GetAuthenticationStateAsync();
+        var userIdClaim = authState.User.FindFirst(System.Security.Claims.ClaimTypes.NameIdentifier)?.Value 
+                          ?? authState.User.FindFirst("sub")?.Value;
+
+        if (string.IsNullOrEmpty(userIdClaim) || !Guid.TryParse(userIdClaim, out var currentUserId))
+        {
+            Snackbar.Add("Authentication error. Please log in again.", Severity.Error);
+            return;
+        }
+
+        var myExistingBid = lot.Bids.FirstOrDefault(x => x.DriverCreatedId == currentUserId);
+
+        var parameters = new DialogParameters<BidDialog> 
+        { 
+            { x => x.AuctionLotId, lot.Id },
+            { x => x.ExistingBid, myExistingBid }
+        };
+
+        var options = new DialogOptions { CloseButton = true, MaxWidth = MaxWidth.Small, FullWidth = true };
+        var title = myExistingBid is null ? "Place a Bid" : "Update Your Bid";
+    
+        var dialog = await DialogService.ShowAsync<BidDialog>(title, parameters, options);
         var result = await dialog.Result;
 
-        if (result is { Canceled: false })
-        {
-            await RefreshAsync();
-        }
+        if (result is { Canceled: false }) await RefreshAsync();
     }
 
     private async Task OpenAuctionDialog(AuctionLotDto? existing)
@@ -171,13 +248,10 @@ else
         var parameters = new DialogParameters<AuctionLotDialog> { { x => x.ExistingLot, existing } };
         var options = new DialogOptions { CloseButton = true, MaxWidth = MaxWidth.Small, FullWidth = true };
 
-        var title = existing is null ? "Create Auction" : "Edit Auction";
+        var title = existing is null ? "Create New Auction" : "Edit Auction Lot";
         var dialog = await DialogService.ShowAsync<AuctionLotDialog>(title, parameters, options);
         var result = await dialog.Result;
 
-        if (result is { Canceled: false })
-        {
-            await RefreshAsync();
-        }
+        if (result is { Canceled: false }) await RefreshAsync();
     }
 }

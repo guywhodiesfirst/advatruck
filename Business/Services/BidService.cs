@@ -44,7 +44,7 @@ public class BidService(
             throw new TmsException("Auction Lot not found", HttpStatusCode.NotFound);
         }
 
-        if (auctionInDb.Status == AuctionStatus.Finished || auctionInDb.EndsAt > DateTime.UtcNow)
+        if (auctionInDb.Status == AuctionStatus.Finished || auctionInDb.EndsAt < DateTime.UtcNow)
         {
             throw new TmsException("Cannot create bid: auction not active", HttpStatusCode.BadRequest);
         }
@@ -62,23 +62,29 @@ public class BidService(
     }
 
     /// <inheritdoc/>
-    public async Task<BidDto> UpdateAsync(BidCreateUpdateDto dto, CancellationToken cancellationToken = default)
+    public async Task<BidDto> UpdateAsync(Guid currentUserId, BidCreateUpdateDto dto, CancellationToken cancellationToken = default)
     {
-        if (dto.Id == Guid.Empty)
+        if (!dto.Id.HasValue || dto.Id.Value == Guid.Empty)
         {
             throw new TmsException("Bid ID is required for update", HttpStatusCode.BadRequest);
         }
 
-        var existingEntity = await repository.GetByIdAsync(dto.Id, cancellationToken);
+        var existingEntity = await repository.GetByIdAsync(dto.Id.Value, cancellationToken);
+
         if (existingEntity == null)
         {
             throw new TmsException("Cannot update: bid not found", HttpStatusCode.NotFound);
         }
 
-        if (existingEntity.AuctionLot.Status == AuctionStatus.Finished ||
-            existingEntity.AuctionLot.EndsAt > DateTime.UtcNow)
+        if (existingEntity.DriverCreatedId != currentUserId)
         {
-            throw new TmsException("Cannot update: auction not active", HttpStatusCode.NotFound);
+            throw new TmsException("Forbidden: You can only edit your own bids", HttpStatusCode.Forbidden);
+        }
+
+        if (existingEntity.AuctionLot.Status == AuctionStatus.Finished ||
+            existingEntity.AuctionLot.EndsAt < DateTime.UtcNow)
+        {
+            throw new TmsException("Cannot update: auction not active", HttpStatusCode.BadRequest);
         }
 
         mapper.Map(dto, existingEntity);

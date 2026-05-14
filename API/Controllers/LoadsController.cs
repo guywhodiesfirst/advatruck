@@ -63,7 +63,7 @@ public class LoadsController(ILoadService service) : ControllerBase
         return Ok(result);
     }
 
-    [Authorize(Roles = "Dispatcher,Admin")]
+    [Authorize(Roles = "Dispatcher")]
     [HttpPatch("assign-driver")]
     public async Task<ActionResult<LoadDto>> AssignDriver([FromBody] LoadAssignDriverDto dto, CancellationToken cancellationToken)
     {
@@ -71,7 +71,15 @@ public class LoadsController(ILoadService service) : ControllerBase
         return Ok(result);
     }
 
-    [Authorize(Roles = "Dispatcher,Admin")]
+    [Authorize(Roles = "Dispatcher")]
+    [HttpPatch("{id:guid}/deassign-driver")]
+    public async Task<ActionResult<LoadDto>> DeassignDriver(Guid id, CancellationToken cancellationToken)
+    {
+        var result = await service.DeassignDriverAsync(id, cancellationToken);
+        return Ok(result);
+    }
+
+    [Authorize(Roles = "Dispatcher")]
     [HttpDelete("{id:guid}")]
     public async Task<ActionResult> Delete(Guid id, CancellationToken cancellationToken)
     {

@@ -2,7 +2,7 @@ namespace Core.Models;
 
 public class BidCreateUpdateDto
 {
-    public Guid Id { get; set; }
+    public Guid? Id { get; set; }
 
     public Guid AuctionLotId { get; set; }
 

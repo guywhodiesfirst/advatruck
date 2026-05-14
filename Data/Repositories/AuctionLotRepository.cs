@@ -11,7 +11,7 @@ public class AuctionLotRepository(TmsDataContext context) : IAuctionLotRepositor
     /// <inheritdoc/>
     public async Task<IEnumerable<AuctionLot>> GetAllActiveAsync(CancellationToken cancellationToken = default)
         => await context.AuctionLots
-            .Where(e => e.Status == AuctionStatus.Active && e.EndsAt < DateTime.UtcNow)
+            .Where(e => e.Status == AuctionStatus.Active && e.EndsAt > DateTime.UtcNow)
             .Include(e => e.DispatcherCreated).ThenInclude(d => d.User)
             .Include(e => e.Bids)
             .ThenInclude(b => b.DriverCreated)

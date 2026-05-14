@@ -1,0 +1,127 @@
+@page "/auctions/{Id:guid}"
+@using Core.Models
+@using Client.Services
+@using Core.Enums
+@inject AuctionLotApiService AuctionService
+@inject ISnackbar Snackbar
+@inject NavigationManager NavManager
+
+<PageTitle>Auction Details</PageTitle>
+
+@* Added pt-10 for more top spacing *@
+<MudContainer MaxWidth="MaxWidth.Large" Class="mt-10 pt-10">
+    @if (_loading)
+    {
+        <MudProgressLinear Color="Color.Primary" Indeterminate="true" />
+    }
+    else if (_lot == null)
+    {
+        <MudAlert Severity="Severity.Error">Auction not found</MudAlert>
+    }
+    else
+    {
+        <div class="d-flex align-center mb-6">
+            <MudIconButton Icon="@Icons.Material.Filled.ArrowBack" OnClick="@(() => NavManager.NavigateTo("/auctions"))" Class="mr-3"/>
+            <MudText Typo="Typo.h4">Lot #@_lot.Id.ToString().Substring(0, 8)</MudText>
+            <MudSpacer />
+            <MudChip T="string" Color="@GetStatusColor(_lot.Status)" Variant="Variant.Filled">@_lot.Status</MudChip>
+        </div>
+
+        <MudGrid>
+            @* Left Column: Auction Info *@
+            <MudItem xs="12" md="4">
+                <MudCard Elevation="2" Class="mb-4">
+                    <MudCardHeader>
+                        <CardHeaderContent>
+                            <MudText Typo="Typo.h6">General Information</MudText>
+                        </CardHeaderContent>
+                    </MudCardHeader>
+                    <MudCardContent>
+                        <MudList T="string">
+                            <MudListItem Icon="@Icons.Material.Filled.CalendarToday">
+                                <b>Starts:</b> @_lot.StartsAt.ToLocalTime().ToString("g")
+                            </MudListItem>
+                            <MudListItem Icon="@Icons.Material.Filled.EventBusy">
+                                <b>Ends:</b> @_lot.EndsAt.ToLocalTime().ToString("g")
+                            </MudListItem>
+                            <MudListItem Icon="@Icons.Material.Filled.Person">
+                                <b>Dispatcher:</b> @_lot.DispatcherName
+                            </MudListItem>
+                        </MudList>
+                        
+                        @if (!string.IsNullOrWhiteSpace(_lot.Note))
+                        {
+                            <MudAlert Severity="Severity.Info" Class="mt-4" Variant="Variant.Outlined">@_lot.Note</MudAlert>
+                        }
+                    </MudCardContent>
+                    <MudCardActions>
+                        <MudButton Variant="Variant.Filled" 
+                                   Color="Color.Primary" 
+                                   FullWidth="true"
+                                   StartIcon="@Icons.Material.Filled.LocalShipping"
+                                   Href="@($"/loads/{_lot.LoadId}")">
+                            View Load Specs
+                        </MudButton>
+                    </MudCardActions>
+                </MudCard>
+            </MudItem>
+
+            <MudItem xs="12" md="8">
+                <MudTable Items="_lot.Bids" Hover="true" Elevation="2" Dense="true" FixedHeader="true" Height="450px">
+                    <ToolBarContent>
+                        <MudText Typo="Typo.h6">Driver Bids @_lot.Bids.Count</MudText>
+                    </ToolBarContent>
+                    <HeaderContent>
+                        <MudTh>Driver</MudTh>
+                        <MudTh>Rate</MudTh>
+                        <MudTh>Timestamp</MudTh>
+                        <MudTh>Bid ID</MudTh>
+                    </HeaderContent>
+                    <RowTemplate>
+                        <MudTd DataLabel="Driver">@context.DriverName</MudTd>
+                        <MudTd DataLabel="Rate">
+                            <MudText Color="Color.Success" Typo="Typo.body1"><b>₴@context.Rate</b></MudText>
+                        </MudTd>
+                        <MudTd DataLabel="Timestamp">@context.CreatedAt.ToLocalTime().ToString("g")</MudTd>
+                        <MudTd DataLabel="Bid ID">@context.Id.ToString().Substring(0, 8)</MudTd>
+                    </RowTemplate>
+                    <NoRecordsContent>
+                        <div class="pa-8 d-flex flex-column align-center">
+                            <MudIcon Icon="@Icons.Material.Filled.History" Size="Size.Large" Style="opacity:0.2" />
+                            <MudText Typo="Typo.body2" Class="mt-2" Style="opacity:0.5">No bids have been placed yet</MudText>
+                        </div>
+                    </NoRecordsContent>
+                </MudTable>
+            </MudItem>
+        </MudGrid>
+    }
+</MudContainer>
+
+@code {
+    [Parameter] public Guid Id { get; set; }
+    private AuctionLotDto? _lot;
+    private bool _loading = true;
+
+    protected override async Task OnInitializedAsync()
+    {
+        try
+        {
+            _lot = await AuctionService.GetByIdAsync(Id);
+        }
+        catch (Exception ex)
+        {
+            Snackbar.Add($"Error loading auction: {ex.Message}", Severity.Error);
+        }
+        finally
+        {
+            _loading = false;
+        }
+    }
+
+    private Color GetStatusColor(AuctionStatus status) => status switch
+    {
+        AuctionStatus.Active => Color.Success,
+        AuctionStatus.Finished => Color.Info,
+        _ => Color.Default
+    };
+}

@@ -147,6 +147,28 @@ public class LoadService(
         return mapper.Map<LoadDto>(updatedLoad);
     }
 
+    public async Task<LoadDto> DeassignDriverAsync(Guid id, CancellationToken cancellationToken = default)
+    {
+        var existingLoad = await loadRepository.GetByIdAsync(id, cancellationToken);
+        if (existingLoad == null)
+        {
+            throw new TmsException("Load not found", HttpStatusCode.NotFound);
+        }
+
+        var driverId = existingLoad.DriverId;
+        if (driverId != null)
+        {
+            existingLoad.DriverId = null;
+            await notificationService.PublishLoadDeassignedAsync(driverId.Value, id);
+        }
+
+        existingLoad.DriverCharge = null;
+
+        var updatedLoad = await loadRepository.UpdateAsync(existingLoad, cancellationToken);
+
+        return mapper.Map<LoadDto>(updatedLoad);
+    }
+
     /// <inheritdoc/>
     public async Task<LoadDto?> GetActiveLoadByIdAsync(Guid driverId, CancellationToken cancellationToken = default)
     {
