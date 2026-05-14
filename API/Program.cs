@@ -215,14 +215,13 @@ try
     {
         app.MapOpenApi();
         app.MapScalarApiReference();
-    }
+        using (var scope = app.Services.CreateScope())
+        {
+            var dbContext = scope.ServiceProvider.GetRequiredService<TmsDataContext>();
+            await dbContext.Database.MigrateAsync();
 
-    using (var scope = app.Services.CreateScope())
-    {
-        var dbContext = scope.ServiceProvider.GetRequiredService<TmsDataContext>();
-        await dbContext.Database.MigrateAsync();
-
-        dbContext.SeedData();
+            dbContext.SeedData();
+        }
     }
 
     app.UseHttpsRedirection();

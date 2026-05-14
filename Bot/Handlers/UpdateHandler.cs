@@ -1,5 +1,6 @@
 namespace Bot.Handlers;
 
+using System.Net;
 using Bot.Interfaces;
 using Bot.UI;
 using Core.Exceptions;
@@ -26,6 +27,10 @@ public class UpdateHandler(
             try
             {
                 await callbacks.HandleAsync(update.CallbackQuery, CancellationToken.None);
+            }
+            catch (TmsException ex) when (ex.StatusCode == HttpStatusCode.Unauthorized)
+            {
+                await sessions.ClearSessionAsync(update.CallbackQuery.Message?.Chat.Id ?? 0);
             }
             catch (Exception ex)
             {
@@ -93,6 +98,11 @@ public class UpdateHandler(
         }
         catch (TmsException ex)
         {
+            if (ex.StatusCode == HttpStatusCode.Unauthorized)
+            {
+                await sessions.ClearSessionAsync(chatId);
+            }
+
             logger.LogWarning("TMS Business Error: {Message}", ex.Message);
             await commands.HandleErrorAsync(chatId, ex.Message);
         }
