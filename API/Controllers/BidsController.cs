@@ -1,5 +1,6 @@
 namespace API.Controllers;
 
+using API.Extensions;
 using Asp.Versioning;
 using Business.Interfaces;
 using Core.Models;
@@ -30,15 +31,30 @@ public class BidsController(IBidService service) : ControllerBase
     [HttpPost]
     public async Task<ActionResult<Guid>> Create([FromBody] BidCreateUpdateDto dto, CancellationToken cancellationToken)
     {
+        var driverId = User.GetDriverId();
+
+        if (driverId == Guid.Empty)
+        {
+            return Unauthorized();
+        }
+
+        dto.DriverCreatedId = driverId;
         var id = await service.CreateAsync(dto, cancellationToken);
         return CreatedAtAction(nameof(GetById), new { v = "1", id }, id);
     }
 
     [Authorize(Roles = "Driver")]
     [HttpPut]
-    public async Task<ActionResult<BidDto>> Update([FromBody] BidCreateUpdateDto dto, CancellationToken cancellationToken)
+    public async Task<ActionResult<BidDto>> Update([FromBody] BidCreateUpdateDto dto)
     {
-        var result = await service.UpdateAsync(dto, cancellationToken);
+        var currentDriverId = User.GetDriverId();
+
+        if (currentDriverId == Guid.Empty)
+        {
+            return Unauthorized();
+        }
+
+        var result = await service.UpdateAsync(currentDriverId, dto);
         return Ok(result);
     }
 

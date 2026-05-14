@@ -17,10 +17,6 @@
 
                 <div class="d-flex align-center ga-2 w-100">
 
-                    <MudButton Variant="Variant.Text" Color="Color.Inherit" Href="/">
-                        Dashboard
-                    </MudButton>
-
                     @if (authState.User.IsInRole("Dispatcher") || authState.User.IsInRole("Admin"))
                     {
                         <MudButton Variant="Variant.Text" Color="Color.Inherit" Href="/loads">

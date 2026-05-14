@@ -1,11 +1,10 @@
-using System.Net;
-using API.Extensions;
-using Core.Exceptions;
-
 namespace API.Controllers;
 
+using System.Net;
+using API.Extensions;
 using Asp.Versioning;
 using Business.Interfaces;
+using Core.Exceptions;
 using Core.Models;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
@@ -53,7 +52,7 @@ public class AuctionLotsController(IAuctionLotService service) : ControllerBase
         return CreatedAtAction(nameof(GetById), new { v = "1", id }, id);
     }
 
-    [Authorize(Roles = "Dispatcher,Admin")]
+    [Authorize(Roles = "Dispatcher")]
     [HttpPut]
     public async Task<ActionResult<AuctionLotDto>> Update([FromBody] AuctionLotCreateUpdateDto dto, CancellationToken cancellationToken)
     {
@@ -61,7 +60,7 @@ public class AuctionLotsController(IAuctionLotService service) : ControllerBase
         return Ok(result);
     }
 
-    [Authorize(Roles = "Admin")]
+    [Authorize(Roles = "Dispatcher")]
     [HttpDelete("{id:guid}")]
     public async Task<ActionResult> Delete(Guid id, CancellationToken cancellationToken)
     {
@@ -69,7 +68,7 @@ public class AuctionLotsController(IAuctionLotService service) : ControllerBase
         return NoContent();
     }
 
-    [Authorize(Roles = "Dispatcher,Admin")]
+    [Authorize(Roles = "Dispatcher")]
     [HttpPatch("{id:guid}/status")]
     public async Task<ActionResult<AuctionLotDto>> UpdateStatus(
         Guid id,
