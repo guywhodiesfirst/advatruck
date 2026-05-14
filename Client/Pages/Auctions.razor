@@ -59,7 +59,24 @@ else
                     <MudCardHeader>
                         <CardHeaderContent>
                             <div class="d-flex justify-space-between align-center">
-                                <MudText Typo="Typo.h6">Lot #@lot.Id.ToString().Substring(0, 8)</MudText>
+                                <CardHeaderContent>
+                                    <div class="d-flex justify-space-between align-center">
+                                        <div class="d-flex flex-column">
+                                            <MudLink href="@($"/loads/{lot.LoadId}")" 
+                                                     Underline="Underline.Hover" 
+                                                     Color="Color.Primary" 
+                                                     Typo="Typo.h6" 
+                                                     Title="View Load Details">
+                                                Lot #@lot.Id.ToString().Substring(0, 8)
+                                            </MudLink>
+                                            @if (lot.LoadId != Guid.Empty)
+                                            {
+                                                <MudText Typo="Typo.caption" Style="opacity: 0.5;">Click to see Load specs</MudText>
+                                            }
+                                        </div>
+                                        <MudChip T="string" Color="Color.Info" Size="Size.Small" Variant="Variant.Text">@lot.Status</MudChip>
+                                    </div>
+                                </CardHeaderContent>
                                 <MudChip T="string" Color="Color.Info" Size="Size.Small" Variant="Variant.Text">@lot.Status</MudChip>
                             </div>
                         </CardHeaderContent>

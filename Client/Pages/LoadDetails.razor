@@ -6,13 +6,14 @@
 @inject LoadApiService LoadsService
 @inject NavigationManager NavManager
 @inject ISnackbar Snackbar
+@inject IJSRuntime JS
 
 <PageTitle>Load Details</PageTitle>
 
 <MudContainer MaxWidth="MaxWidth.Large" Class="mt-10 pt-10">
     <div class="d-flex align-center mb-6">
         <MudIconButton Icon="@Icons.Material.Filled.ArrowBack" 
-                       OnClick="@(() => NavManager.NavigateTo("/loads"))" 
+                       OnClick="GoBack" 
                        Edge="Edge.Start" 
                        Class="mr-2" />
         <MudText Typo="Typo.h4">Load Details</MudText>
@@ -135,6 +136,11 @@
         {
             _loading = false;
         }
+    }
+    
+    private async Task GoBack()
+    {
+        await JS.InvokeVoidAsync("history.back");
     }
 
     private Color GetStatusColor(Core.Enums.LoadStatus status) => status switch
