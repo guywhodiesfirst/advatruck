@@ -4,7 +4,7 @@ using Core.Enums;
 using Data;
 using Microsoft.EntityFrameworkCore;
 
-public class AuctionStatusBackgroundWorker(
+public class AuctionStatusWorker(
     IServiceScopeFactory scopeFactory) : BackgroundService
 {
     protected override async Task ExecuteAsync(CancellationToken stoppingToken)

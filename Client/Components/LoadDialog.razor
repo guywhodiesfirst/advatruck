@@ -1,8 +1,8 @@
 @using Core.Models
-@using Core.Enums
 @using Client.Services
 @using Microsoft.AspNetCore.Components.Authorization
-@inject LoadApiService LoadsService
+@inject AuctionLotApiService AuctionService
+@inject LoadApiService LoadService
 @inject ISnackbar Snackbar
 @inject AuthenticationStateProvider AuthStateProvider
 
@@ -10,166 +10,147 @@
     <TitleContent>
         <MudText Typo="Typo.h6">
             <MudIcon Icon="@(IsEditMode ? Icons.Material.Filled.Edit : Icons.Material.Filled.Add)" Class="mr-2" />
-            @(IsEditMode ? "Edit Load" : "Create Load")
+            @(IsEditMode ? "Edit Auction" : "Create Auction")
         </MudText>
     </TitleContent>
     <DialogContent>
         <MudForm @ref="_form" @bind-IsValid="_isValid">
             <MudGrid>
-                <MudItem xs="12" sm="4">
-                    <MudNumericField @bind-Value="_model.Rate" Label="Rate (₴)" Format="F2" Min="0.01M" Required="true" Variant="Variant.Outlined" />
-                </MudItem>
-                <MudItem xs="12" sm="4">
-                    <MudNumericField @bind-Value="_model.CargoWeight" Label="Weight (kg)" Min="0.1" Required="true" Variant="Variant.Outlined" />
-                </MudItem>
-                <MudItem xs="12" sm="4">
-                    <MudSelect T="LoadStatus" Label="Status" @bind-Value="_model.LoadStatus" Variant="Variant.Outlined">
-                        <MudSelectItem Value="LoadStatus.Scheduled">Scheduled</MudSelectItem>
-                        <MudSelectItem Value="LoadStatus.Ongoing">Ongoing</MudSelectItem>
-                        <MudSelectItem Value="LoadStatus.Completed">Completed</MudSelectItem>
-                        <MudSelectItem Value="LoadStatus.Cancelled">Cancelled</MudSelectItem>
-                    </MudSelect>
-                </MudItem>
-                
-                <MudItem xs="4">
-                    <MudNumericField @bind-Value="_model.CargoLength" Label="Length (cm)" Min="1" Variant="Variant.Outlined" />
-                </MudItem>
-                <MudItem xs="4">
-                    <MudNumericField @bind-Value="_model.CargoWidth" Label="Width (cm)" Min="1" Variant="Variant.Outlined" />
-                </MudItem>
-                <MudItem xs="4">
-                    <MudNumericField @bind-Value="_model.CargoHeight" Label="Height (cm)" Min="1" Variant="Variant.Outlined" />
-                </MudItem>
-
                 <MudItem xs="12">
-                    <MudTextField @bind-Value="_model.Note" Label="General Note" Lines="2" Variant="Variant.Outlined" />
-                </MudItem>
-
-                <MudItem xs="12">
-                    <div class="d-flex align-center justify-space-between mb-2">
-                        <MudText Typo="Typo.subtitle1">Route Stops (@_model.LoadStops.Count)</MudText>
-                        <MudButton StartIcon="@Icons.Material.Filled.AddLocation" 
-                                   Size="Size.Small" 
-                                   Variant="Variant.Filled" 
-                                   Color="Color.Primary"
-                                   OnClick="AddStop">Add Stop</MudButton>
-                    </div>
-                    
-                    @for (int i = 0; i < _model.LoadStops.Count; i++)
+                    @if (IsEditMode)
                     {
-                        var index = i;
-                        var stop = _model.LoadStops.ElementAt(index);
-
-                        <MudPaper Class="pa-4 mb-4" Elevation="2">
-                            <div class="d-flex align-center mb-2">
-                                <MudText Typo="Typo.button" Class="mr-4">#@(index + 1)</MudText>
-                                <MudSelect T="LoadLocationType" Label="Type" @bind-Value="stop.LoadLocationType" Dense="true" Margin="Margin.Dense">
-                                    <MudSelectItem Value="LoadLocationType.Pickup">Pickup</MudSelectItem>
-                                    <MudSelectItem Value="LoadLocationType.Delivery">Delivery</MudSelectItem>
-                                </MudSelect>
-                                <MudSpacer />
-                                <MudIconButton Icon="@Icons.Material.Filled.Delete" 
-                                               Color="Color.Error" 
-                                               Size="Size.Small" 
-                                               OnClick="@(() => RemoveStop(index))" 
-                                               Disabled="@(_model.LoadStops.Count <= 2)" />
-                            </div>
-                            
-                            <MudTextField @bind-Value="stop.Address" Label="Address" Required="true" Class="mb-2" />
-                            
-                            <div class="d-flex ga-4">
-                                <MudDatePicker Label="Date" @bind-Date="@_stopDates[index]" Required="true" Editable="true" />
-                                <MudTimePicker Label="Time" @bind-Time="@_stopTimes[index]" Required="true" Editable="true" />
-                            </div>
-                        </MudPaper>
+                        @* В режимі редагування зазвичай вантаж змінювати не можна, просто показуємо його *@
+                        <MudTextField Value="@(_model.LoadId.ToString())" Label="Load ID" ReadOnly="true" Variant="Variant.Outlined" />
                     }
+                    else
+                    {
+                        <MudSelect T="Guid" 
+                                   Label="Select Active Load" 
+                                   @bind-Value="_model.LoadId" 
+                                   Required="true" 
+                                   Variant="Variant.Outlined"
+                                   AnchorOrigin="Origin.BottomCenter">
+                            @if (_availableLoads == null)
+                            {
+                                <MudProgressCircular Size="Size.Small" Indeterminate="true" />
+                            }
+                            else if (!_availableLoads.Any())
+                            {
+                                <MudSelectItem Value="Guid.Empty" Disabled="true">No available loads found</MudSelectItem>
+                            }
+                            else
+                            {
+                                @foreach (var load in _availableLoads)
+                                {
+                                    <MudSelectItem Value="@load.Id">
+                                        <div class="d-flex flex-column">
+                                            <MudText Typo="Typo.body1">@load.LoadStops.FirstOrDefault()?.Address</MudText>
+                                            <MudText Typo="Typo.body1">@load.LoadStops.Last().Address</MudText>
+                                            <MudText Typo="Typo.caption" Style="opacity: 0.7">
+                                                Weight: @load.CargoWeight kg | Rate: ₴@load.Rate
+                                            </MudText>
+                                        </div>
+                                    </MudSelectItem>
+                                }
+                            }
+                        </MudSelect>
+                    }
+                </MudItem>
+
+                @* ... Решта полів (дати та нотатки) залишаються такими ж ... *@
+                <MudItem xs="12" sm="6">
+                    <MudDatePicker Label="Start Date" @bind-Date="_startDate" Required="true" MinDate="DateTime.Today" />
+                </MudItem>
+                <MudItem xs="12" sm="6">
+                    <MudTimePicker Label="Start Time" @bind-Time="_startTime" Required="true" />
+                </MudItem>
+                <MudItem xs="12" sm="6">
+                    <MudDatePicker Label="End Date" @bind-Date="_endDate" Required="true" MinDate="_startDate" />
+                </MudItem>
+                <MudItem xs="12" sm="6">
+                    <MudTimePicker Label="End Time" @bind-Time="_endTime" Required="true" />
+                </MudItem>
+                <MudItem xs="12">
+                    <MudTextField T="string" Label="Note" @bind-Value="_model.Note" Lines="2" Variant="Variant.Outlined" />
                 </MudItem>
             </MudGrid>
         </MudForm>
     </DialogContent>
     <DialogActions>
         <MudButton OnClick="Cancel" Variant="Variant.Text">Cancel</MudButton>
-        <MudButton Color="Color.Primary" Variant="Variant.Filled" OnClick="SubmitAsync" Disabled="@_submitting">
+        <MudButton Color="Color.Primary" Variant="Variant.Filled" OnClick="SubmitAsync" Disabled="@(_submitting || (_model.LoadId == Guid.Empty && !IsEditMode))">
             @if (_submitting) { <MudProgressCircular Size="Size.Small" Indeterminate="true" Class="mr-2" /> }
-            @(IsEditMode ? "Save Changes" : "Create Load")
+            @(IsEditMode ? "Save Changes" : "Create")
         </MudButton>
     </DialogActions>
 </MudDialog>
 
 @code {
-    [CascadingParameter] IMudDialogInstance MudDialog { get; set; } = null!;
+    [CascadingParameter] private IMudDialogInstance MudDialog { get; set; } = null!;
+    [Parameter] public AuctionLotDto? ExistingLot { get; set; }
     [Parameter] public LoadDto? ExistingLoad { get; set; }
 
-    private bool IsEditMode => ExistingLoad is not null;
+    private bool IsEditMode => ExistingLot is not null;
     private MudForm _form = null!;
     private bool _isValid;
     private bool _submitting;
+    private List<LoadDto>? _availableLoads;
 
-    private LoadCreateUpdateDto _model = new() { LoadStops = new List<LoadStopDto>() };
-    
-    private List<DateTime?> _stopDates = new();
-    private List<TimeSpan?> _stopTimes = new();
+    private AuctionLotCreateUpdateDto _model = new();
+    private DateTime? _startDate;
+    private TimeSpan? _startTime;
+    private DateTime? _endDate;
+    private TimeSpan? _endTime;
 
     protected override async Task OnInitializedAsync()
     {
-        if (IsEditMode && ExistingLoad is not null)
+        await LoadAvailableLoads();
+
+        if (IsEditMode && ExistingLot is not null)
         {
-            _model.Id = ExistingLoad.Id;
-            _model.Note = ExistingLoad.Note;
-            _model.Rate = ExistingLoad.Rate;
-            _model.CargoWeight = ExistingLoad.CargoWeight;
-            _model.CargoWidth = ExistingLoad.CargoWidth;
-            _model.CargoHeight = ExistingLoad.CargoHeight;
-            _model.CargoLength = ExistingLoad.CargoLength;
-            _model.DispatcherId = ExistingLoad.DispatcherId;
-            _model.LoadStatus = ExistingLoad.LoadStatus;
-            
-            foreach (var stop in ExistingLoad.LoadStops.OrderBy(s => s.Timestamp))
-            {
-                var local = stop.Timestamp.ToLocalTime();
-                _model.LoadStops.Add(new LoadStopDto {
-                    Address = stop.Address,
-                    LoadLocationType = stop.LoadLocationType,
-                    Note = stop.Note,
-                    Location = new Core.Types.GeoPoint { Latitude = stop.Location.Latitude, Longitude = stop.Location.Longitude }
-                });
-                _stopDates.Add(local.Date);
-                _stopTimes.Add(local.TimeOfDay);
-            }
+            _model.Id = ExistingLot.Id;
+            _model.LoadId = ExistingLot.LoadId;
+            _model.DispatcherCreatedId = ExistingLot.DispatcherCreatedId;
+            _model.Note = ExistingLot.Note;
+
+            var localStart = ExistingLot.StartsAt.ToLocalTime();
+            _startDate = localStart.Date;
+            _startTime = localStart.TimeOfDay;
+
+            var localEnd = ExistingLot.EndsAt.ToLocalTime();
+            _endDate = localEnd.Date;
+            _endTime = localEnd.TimeOfDay;
         }
         else
         {
-            AddStop(LoadLocationType.Pickup);
-            AddStop(LoadLocationType.Delivery);
-            
             var authState = await AuthStateProvider.GetAuthenticationStateAsync();
-            var userId = authState.User.FindFirst(System.Security.Claims.ClaimTypes.NameIdentifier)?.Value;
-            if (Guid.TryParse(userId, out var guid)) _model.DispatcherId = guid;
+            var userIdClaim = authState.User.FindFirst(System.Security.Claims.ClaimTypes.NameIdentifier);
+            if (userIdClaim is not null && Guid.TryParse(userIdClaim.Value, out var uid))
+                _model.DispatcherCreatedId = uid;
+
+            _startDate = DateTime.Today;
+            _startTime = DateTime.Now.TimeOfDay;
+            // Дефолтний час закінчення - через 24 години
+            _endDate = DateTime.Today.AddDays(1);
+            _endTime = DateTime.Now.TimeOfDay;
         }
     }
 
-    private void AddStop() => AddStop(LoadLocationType.Delivery);
-    
-    private void AddStop(LoadLocationType type)
+    private async Task LoadAvailableLoads()
     {
-        _model.LoadStops.Add(new LoadStopDto 
-        { 
-            LoadLocationType = type, 
-            Location = new Core.Types.GeoPoint { Latitude = 0, Longitude = 0 },
-            Timestamp = DateTime.UtcNow
-        });
-        _stopDates.Add(DateTime.Today);
-        _stopTimes.Add(DateTime.Now.TimeOfDay);
-    }
-
-    private void RemoveStop(int index)
-    {
-        if (_model.LoadStops.Count > 2)
+        try
         {
-            var el = _model.LoadStops.ElementAt(index);
-            _model.LoadStops.Remove(el);
-            _stopDates.RemoveAt(index);
-            _stopTimes.RemoveAt(index);
+            // Отримуємо всі вантажі
+            var allLoads = await LoadService.GetAllAsync();
+            // Фільтруємо ті, що в статусі Scheduled (не призначені водію і не в дорозі)
+            // Також можна додати перевірку, чи вже не створено аукціон для цього вантажу
+            _availableLoads = allLoads
+                .Where(l => l.LoadStatus == Core.Enums.LoadStatus.Scheduled)
+                .ToList();
+        }
+        catch (Exception)
+        {
+            Snackbar.Add("Failed to load available loads", Severity.Error);
         }
     }
 
@@ -178,45 +159,39 @@
         await _form.ValidateAsync();
         if (!_isValid) return;
 
-        for (int i = 0; i < _model.LoadStops.Count; i++)
+        if (_startDate == null || _startTime == null || _endDate == null || _endTime == null) return;
+
+        var finalStartsAt = _startDate.Value.Add(_startTime.Value);
+        var finalEndsAt = _endDate.Value.Add(_endTime.Value);
+
+        if (finalEndsAt <= finalStartsAt)
         {
-            if (_stopDates[i].HasValue && _stopTimes[i].HasValue)
-            {
-                var combined = _stopDates[i]!.Value.Add(_stopTimes[i]!.Value);
-                _model.LoadStops.ElementAt(i).Timestamp = combined.ToUniversalTime();
-            }
+            Snackbar.Add("End time must be after start time", Severity.Warning);
+            return;
         }
+
+        _model.StartsAt = finalStartsAt.ToUniversalTime();
+        _model.EndsAt = finalEndsAt.ToUniversalTime();
 
         _submitting = true;
         try
         {
             if (IsEditMode)
             {
-                var result = await LoadsService.UpdateAsync(_model);
-                if (result != null)
-                {
-                    Snackbar.Add("Load updated", Severity.Success);
-                    MudDialog.Close(DialogResult.Ok(result.Id));
-                }
+                var updated = await AuctionService.UpdateAsync(_model);
+                MudDialog.Close(DialogResult.Ok(updated));
             }
             else
             {
-                var id = await LoadsService.CreateAsync(_model);
-                if (id != null)
-                {
-                    Snackbar.Add("Load created", Severity.Success);
-                    MudDialog.Close(DialogResult.Ok(id));
-                }
+                var id = await AuctionService.CreateAsync(_model);
+                MudDialog.Close(DialogResult.Ok(id));
             }
         }
-        catch (Exception ex)
+        catch (Exception)
         {
-            Snackbar.Add($"Error: {ex.Message}", Severity.Error);
+            Snackbar.Add("Error during submission", Severity.Error);
         }
-        finally
-        {
-            _submitting = false;
-        }
+        finally { _submitting = false; }
     }
 
     private void Cancel() => MudDialog.Cancel();

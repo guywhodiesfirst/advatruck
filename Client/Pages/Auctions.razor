@@ -1,6 +1,5 @@
 @page "/auctions"
 @using Core.Models
-@using Core.Enums
 @using Client.Services
 @using Client.Components
 @using Microsoft.AspNetCore.Components.Authorization
@@ -68,7 +67,7 @@ else
                     <MudCardContent Class="flex-grow-1">
                         <MudText Typo="Typo.body2" Color="Color.Default">Current Best Rate:</MudText>
                         <MudText Typo="Typo.h5" Color="Color.Primary">
-                            $@(lot.Bids.OrderByDescending(x => x.Rate).FirstOrDefault()?.Rate ?? 0)
+                            @(lot.Bids.Any() ? $"₴{lot.Bids.OrderByDescending(x => x.CreatedAt).First().Rate}" : "No bids yet")
                         </MudText>
                         <MudDivider Class="my-2" />
                         <div class="d-flex justify-space-between">
@@ -87,7 +86,7 @@ else
                         }
                     </MudCardContent>
                     <MudCardActions>
-                        <MudButton Variant="Variant.Text" Color="Color.Primary" Href="@($"/auctions/{lot.Id}")">Details</MudButton>
+                        <MudButton Variant="Variant.Text" Color="Color.Primary" BorderColor="Color.Primary" Href="@($"/auctions/{lot.Id}")">Details</MudButton>
                         <MudSpacer />
                         <AuthorizeView Roles="Dispatcher,Admin">
                             <Authorized>
@@ -118,33 +117,18 @@ else
     private List<AuctionLotDto> _lots = new();
     private bool _loading = true;
 
-    protected override async Task OnInitializedAsync()
-    {
-        try
-        {
-            _lots = await AuctionService.GetAllActiveAsync();
-        }
-        catch (Exception)
-        {
-            Snackbar.Add("Не вдалося завантажити аукціони", Severity.Error);
-        }
-        finally
-        {
-            _loading = false;
-        }
-    }
+    protected override async Task OnInitializedAsync() => await RefreshAsync();
 
     private async Task RefreshAsync()
     {
         _loading = true;
-        StateHasChanged();
         try
         {
             _lots = await AuctionService.GetAllActiveAsync();
         }
-        catch (Exception)
+        catch (Exception ex)
         {
-            Snackbar.Add("Не вдалося оновити аукціони", Severity.Error);
+            Snackbar.Add($"Error: {ex.Message}", Severity.Error);
         }
         finally
         {

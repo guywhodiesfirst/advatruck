@@ -1,3 +1,7 @@
+using System.Net;
+using API.Extensions;
+using Core.Exceptions;
+
 namespace API.Controllers;
 
 using Asp.Versioning;
@@ -33,10 +37,18 @@ public class AuctionLotsController(IAuctionLotService service) : ControllerBase
         return Ok(result);
     }
 
-    [Authorize(Roles = "Dispatcher,Admin")]
+    [Authorize(Roles = "Dispatcher")]
     [HttpPost]
     public async Task<ActionResult<Guid>> Create([FromBody] AuctionLotCreateUpdateDto dto, CancellationToken cancellationToken)
     {
+        var dispatcherId = User.GetDispatcherId();
+
+        if (dispatcherId == Guid.Empty)
+        {
+            throw new TmsException("Dispatcher profile not found", HttpStatusCode.Unauthorized);
+        }
+
+        dto.DispatcherCreatedId = dispatcherId;
         var id = await service.CreateAsync(dto, cancellationToken);
         return CreatedAtAction(nameof(GetById), new { v = "1", id }, id);
     }

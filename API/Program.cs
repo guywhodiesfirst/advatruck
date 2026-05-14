@@ -179,7 +179,7 @@ try
     builder.Services.AddMemoryCache();
     builder.Services.AddHostedService<DriverActivityWorker>();
     builder.Services.AddHostedService<LoadStatusWorker>();
-    builder.Services.AddHostedService<AuctionStatusBackgroundWorker>();
+    builder.Services.AddHostedService<AuctionStatusWorker>();
 
     builder.Services.AddHttpClient<IGeocodingService, NominatimService>(c =>
     {

@@ -8,6 +8,7 @@
 @inject LoadApiService LoadsService
 @inject IDialogService DialogService
 @inject ISnackbar Snackbar
+@inject NavigationManager NavManager
 
 <PageTitle>Loads</PageTitle>
 
@@ -76,6 +77,10 @@ else
         
                     <MudMenuItem Icon="@Icons.Material.Filled.Edit" OnClick="@(() => OpenLoadDialog(context))">Edit Full Load</MudMenuItem>
                     <MudMenuItem Icon="@Icons.Material.Filled.Delete" Color="Color.Error" OnClick="@(() => DeleteLoadAsync(context.Id))">Delete</MudMenuItem>
+                    <MudMenuItem Icon="@Icons.Material.Filled.Visibility" 
+                                 OnClick="@(() => NavManager.NavigateTo($"/loads/{context.Id}"))">
+                        View Details
+                    </MudMenuItem>
                 </MudMenu>
             </MudTd>
         </RowTemplate>
@@ -94,6 +99,14 @@ else
                                         <div class="d-flex flex-column">
                                             <MudText Typo="Typo.caption" Style="opacity:0.6">@stop.LoadLocationType - @stop.Timestamp.ToLocalTime().ToString("g")</MudText>
                                             <MudText Typo="Typo.body2">@stop.Address</MudText>
+                                            
+                                            @if (!string.IsNullOrWhiteSpace(stop.Note))
+                                            {
+                                                <MudText Typo="Typo.caption" Color="Color.Info" Class="mt-1 d-flex align-center">
+                                                    <MudIcon Icon="@Icons.Material.Filled.Info" Size="Size.Small" Class="mr-1" />
+                                                    @stop.Note
+                                                </MudText>
+                                            }
                                         </div>
                                     </MudTimelineItem>
                                 }

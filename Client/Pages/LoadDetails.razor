@@ -1,0 +1,147 @@
+@page "/loads/{Id:guid}"
+@using Core.Models
+@using Client.Services
+@using Microsoft.AspNetCore.Authorization
+@attribute [Authorize]
+@inject LoadApiService LoadsService
+@inject NavigationManager NavManager
+@inject ISnackbar Snackbar
+
+<PageTitle>Load Details</PageTitle>
+
+<MudContainer MaxWidth="MaxWidth.Large" Class="mt-10 pt-10">
+    <div class="d-flex align-center mb-6">
+        <MudIconButton Icon="@Icons.Material.Filled.ArrowBack" 
+                       OnClick="@(() => NavManager.NavigateTo("/loads"))" 
+                       Edge="Edge.Start" 
+                       Class="mr-2" />
+        <MudText Typo="Typo.h4">Load Details</MudText>
+        <MudSpacer />
+        @if (_load != null)
+        {
+            <MudChip T="string" Color="@GetStatusColor(_load.LoadStatus)" Variant="Variant.Filled">@_load.LoadStatus</MudChip>
+        }
+    </div>
+
+    @if (_loading)
+    {
+        <MudProgressLinear Color="Color.Primary" Indeterminate="true" />
+    }
+    else if (_load == null)
+    {
+        <MudAlert Severity="Severity.Error">Load not found or error loading data.</MudAlert>
+    }
+    else
+    {
+        <MudGrid>
+            <MudItem xs="12" md="8">
+                <MudCard Elevation="2" Class="mb-4">
+                    <MudCardHeader>
+                        <CardHeaderContent>
+                            <MudText Typo="Typo.h6">Route Timeline</MudText>
+                        </CardHeaderContent>
+                    </MudCardHeader>
+                    <MudCardContent>
+                        <MudTimeline TimelinePosition="TimelinePosition.Start">
+                            @foreach (var stop in _load.LoadStops.OrderBy(s => s.Timestamp))
+                            {
+                                <MudTimelineItem Color="@(stop.LoadLocationType == Core.Enums.LoadLocationType.Pickup ? Color.Primary : Color.Secondary)">
+                                    <MudText Typo="Typo.subtitle1">@stop.Address</MudText>
+                                    <MudText Typo="Typo.caption">@stop.LoadLocationType.ToString() • @stop.Timestamp.ToLocalTime().ToString("f")</MudText>
+                                    @if (!string.IsNullOrEmpty(stop.Note))
+                                    {
+                                        <MudAlert Severity="Severity.Info" NoIcon="true" Dense="true" Class="mt-2">@stop.Note</MudAlert>
+                                    }
+                                </MudTimelineItem>
+                            }
+                        </MudTimeline>
+                    </MudCardContent>
+                </MudCard>
+            </MudItem>
+
+            <MudItem xs="12" md="4">
+                <MudCard Elevation="2" Class="mb-4">
+                    <MudCardHeader>
+                        <CardHeaderContent>
+                            <MudText Typo="Typo.h6">Cargo Specifications</MudText>
+                        </CardHeaderContent>
+                    </MudCardHeader>
+                    <MudCardContent>
+                        <MudList T="string">
+                            <MudListItem Icon="@Icons.Material.Filled.Scale">
+                                <b>Weight:</b> @_load.CargoWeight kg
+                            </MudListItem>
+                            <MudListItem Icon="@Icons.Material.Filled.SquareFoot">
+                                <b>Dimensions:</b> @($"{_load.CargoLength} x {_load.CargoWidth} x {_load.CargoHeight}") cm
+                            </MudListItem>
+                            <MudListItem Icon="@Icons.Material.Filled.Payments">
+                                <b>Rate:</b> <MudText Color="Color.Success" Inline="true">₴@_load.Rate</MudText>
+                            </MudListItem>
+                        </MudList>
+                    </MudCardContent>
+                </MudCard>
+
+                <MudCard Elevation="2" Class="mb-4">
+                    <MudCardHeader>
+                        <CardHeaderContent>
+                            <MudText Typo="Typo.h6">Personnel</MudText>
+                        </CardHeaderContent>
+                    </MudCardHeader>
+                    <MudCardContent>
+                        <MudText Typo="Typo.body2"><b>Dispatcher:</b> @_load.DispatcherName</MudText>
+                        <MudText Typo="Typo.body2" Class="mt-2">
+                            <b>Driver:</b> @(string.IsNullOrEmpty(_load.DriverName) ? "Not assigned" : _load.DriverName)
+                        </MudText>
+                    </MudCardContent>
+                </MudCard>
+
+                @if (!string.IsNullOrWhiteSpace(_load.Note))
+                {
+                    <MudCard Elevation="2" Class="mud-theme-info" Outlined="true">
+                        <MudCardHeader>
+                            <CardHeaderContent>
+                                <MudText Typo="Typo.h6">General Note</MudText>
+                            </CardHeaderContent>
+                            <CardHeaderActions>
+                                <MudIcon Icon="@Icons.Material.Filled.Note" Class="mt-2 mr-2" />
+                            </CardHeaderActions>
+                        </MudCardHeader>
+                        <MudCardContent>
+                            <MudText Typo="Typo.body1">@_load.Note</MudText>
+                        </MudCardContent>
+                    </MudCard>
+                }
+            </MudItem>
+        </MudGrid>
+    }
+</MudContainer>
+
+@code {
+    [Parameter] public Guid Id { get; set; }
+    private LoadDto? _load;
+    private bool _loading = true;
+
+    protected override async Task OnInitializedAsync()
+    {
+        try
+        {
+            _load = await LoadsService.GetByIdAsync(Id);
+        }
+        catch (Exception)
+        {
+            Snackbar.Add("Error loading details", Severity.Error);
+        }
+        finally
+        {
+            _loading = false;
+        }
+    }
+
+    private Color GetStatusColor(Core.Enums.LoadStatus status) => status switch
+    {
+        Core.Enums.LoadStatus.Scheduled => Color.Info,
+        Core.Enums.LoadStatus.Ongoing => Color.Warning,
+        Core.Enums.LoadStatus.Completed => Color.Success,
+        _ => Color.Default
+    };
+}
