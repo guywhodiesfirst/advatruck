@@ -35,4 +35,12 @@ public interface INotificationService
     /// <param name="loadId">The unique identifier of the started load.</param>
     /// <returns>A task representing the asynchronous operation.</returns>
     Task PublishLoadStartedAsync(Guid driverId, Guid loadId);
+
+    /// <summary>
+    /// Publishes an event when a scheduled road is deassigned from the driver.
+    /// </summary>
+    /// <param name="driverId">Driver's ID.</param>
+    /// <param name="loadId">Load ID.</param>
+    /// <returns>A task representing the asynchronous operation.</returns>
+    Task PublishLoadDeassignedAsync(Guid driverId, Guid loadId);
 }

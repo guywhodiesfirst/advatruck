@@ -75,6 +75,20 @@ public class LoadApiService(HttpClient httpClient)
         return await response.Content.ReadFromJsonAsync<LoadDto>();
     }
 
+    public async Task<LoadDto?> DessignDriverAsync(Guid id)
+    {
+        var response = await httpClient.PatchAsJsonAsync(
+            ApiRoutes.Loads.DeassignDriver(id),
+            id);
+
+        if (!response.IsSuccessStatusCode)
+        {
+            return null;
+        }
+
+        return await response.Content.ReadFromJsonAsync<LoadDto>();
+    }
+
     public async Task<bool> DeleteAsync(Guid id)
     {
         var response = await httpClient.DeleteAsync(

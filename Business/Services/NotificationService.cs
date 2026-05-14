@@ -25,6 +25,9 @@ public class NotificationService(IConnection connection, ILogger<NotificationSer
     public Task PublishLoadStartedAsync(Guid driverId, Guid loadId)
         => SendEventAsync(driverId, loadId, "load.ongoing");
 
+    public Task PublishLoadDeassignedAsync(Guid driverId, Guid loadId)
+        => SendEventAsync(driverId, loadId, "load.deassigned");
+
     private async Task SendEventAsync(Guid driverId, Guid? loadId, string routingKey)
     {
         await Task.Run(() =>

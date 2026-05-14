@@ -34,6 +34,7 @@ else
             <MudTh>Status</MudTh>
             <MudTh>Dispatcher</MudTh>
             <MudTh>Driver</MudTh>
+            <MudTh>Timeline</MudTh>
             <MudTh>Weight</MudTh>
             <MudTh>Rate</MudTh>
             <MudTh>Actions</MudTh>
@@ -49,6 +50,19 @@ else
                 <MudChip T="string" Color="@GetStatusColor(context.LoadStatus)" Size="Size.Small" Variant="Variant.Text">
                     @context.LoadStatus
                 </MudChip>
+            </MudTd>
+            <MudTd DataLabel="Timeline">
+                <div class="d-flex flex-column">
+                    <MudText Typo="Typo.caption">
+                        <b>Created:</b> @context.CreatedAt.ToLocalTime().ToString("g")
+                    </MudText>
+                    @if (context.ClosedAt.HasValue)
+                    {
+                        <MudText Typo="Typo.caption" Color="Color.Info">
+                            <b>Closed:</b> @context.ClosedAt.Value.ToLocalTime().ToString("g")
+                        </MudText>
+                    }
+                </div>
             </MudTd>
             <MudTd DataLabel="Dispatcher">@context.DispatcherName</MudTd>
             <MudTd DataLabel="Driver">
@@ -68,13 +82,22 @@ else
                             <MudMenuItem OnClick="@(() => UpdateStatusAsync(context.Id, Core.Enums.LoadStatus.Cancelled))">Cancelled</MudMenuItem>
                         </MudMenu>
                     </MudMenuItem>
-                    
+        
                     <MudMenuItem Icon="@Icons.Material.Filled.PersonAdd" OnClick="@(() => OpenAssignDriverDialog(context.Id))">
                         Assign Driver
                     </MudMenuItem>
-        
+
+                    @if (context.DriverId.HasValue)
+                    {
+                        <MudMenuItem Icon="@Icons.Material.Filled.PersonRemove" 
+                                     Color="Color.Warning"
+                                     OnClick="@(() => DeassignDriverAsync(context.Id))">
+                            Deassign Driver
+                        </MudMenuItem>
+                    }
+
                     <MudDivider DividerType="DividerType.Middle" Class="my-2"/>
-        
+
                     <MudMenuItem Icon="@Icons.Material.Filled.Edit" OnClick="@(() => OpenLoadDialog(context))">Edit Full Load</MudMenuItem>
                     <MudMenuItem Icon="@Icons.Material.Filled.Delete" Color="Color.Error" OnClick="@(() => DeleteLoadAsync(context.Id))">Delete</MudMenuItem>
                     <MudMenuItem Icon="@Icons.Material.Filled.Visibility" 
@@ -153,21 +176,26 @@ else
         try
         {
             var data = await LoadsService.GetAllAsync();
-            _loads = data.Select(x => new LoadWrapper 
-            { 
-                Id = x.Id, 
-                LoadStatus = x.LoadStatus,
-                DispatcherName = x.DispatcherName,
-                DriverName = x.DriverName,
-                Rate = x.Rate,
-                CargoWeight = x.CargoWeight,
-                LoadStops = x.LoadStops,
-                Note = x.Note,
-                CargoHeight = x.CargoHeight,
-                CargoLength = x.CargoLength,
-                CargoWidth = x.CargoWidth,
-                DispatcherId = x.DispatcherId
-            }).ToList();
+            _loads = data
+                .OrderByDescending(x => x.CreatedAt)
+                .Select(x => new LoadWrapper 
+                { 
+                    Id = x.Id, 
+                    CreatedAt = x.CreatedAt,
+                    ClosedAt = x.ClosedAt,
+                    LoadStatus = x.LoadStatus,
+                    DispatcherName = x.DispatcherName,
+                    DriverId = x.DriverId,
+                    DriverName = x.DriverName,
+                    Rate = x.Rate,
+                    CargoWeight = x.CargoWeight,
+                    LoadStops = x.LoadStops,
+                    Note = x.Note,
+                    CargoHeight = x.CargoHeight,
+                    CargoLength = x.CargoLength,
+                    CargoWidth = x.CargoWidth,
+                    DispatcherId = x.DispatcherId
+                }).ToList();
         }
         catch (Exception ex)
         {
@@ -176,6 +204,32 @@ else
         finally
         {
             _loading = false;
+        }
+    }
+    
+    private async Task DeassignDriverAsync(Guid loadId)
+    {
+        var confirm = await DialogService.ShowMessageBoxAsync(
+            "Warning", 
+            "Are you sure you want to deassign the driver from this load?", 
+            "Deassign", 
+            "Cancel");
+
+        if (confirm == true)
+        {
+            try
+            {
+                var result = await LoadsService.DessignDriverAsync(loadId);
+                if (result != null)
+                {
+                    Snackbar.Add("Driver deassigned successfully", Severity.Success);
+                    await RefreshAsync();
+                }
+            }
+            catch (Exception ex)
+            {
+                Snackbar.Add($"Error: {ex.Message}", Severity.Error);
+            }
         }
     }
 

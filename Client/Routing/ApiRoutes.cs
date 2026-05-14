@@ -30,6 +30,9 @@ public static class ApiRoutes
 
         public static string AssignDriver
             => $"api/{Version}/loads/assign-driver";
+
+        public static string DeassignDriver(Guid id)
+            => $"api/{Version}/loads/{id}/deassign-driver";
     }
 
     public static class AuctionLots

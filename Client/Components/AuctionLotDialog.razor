@@ -33,7 +33,8 @@
                                 @foreach (var load in _availableLoads)
                                 {
                                     <MudSelectItem Value="@load.Id">
-                                        ID: @load.Id.ToString().Substring(0,8) | Rate: ₴@load.Rate
+                                        ID: @load.Id.ToString().Substring(0,8) | Rate: ₴@load.Rate 
+                                        | 1st Pickup: @load.LoadStops.First().Address | Last Delivery : @load.LoadStops.Last().Address
                                     </MudSelectItem>
                                 }
                             }
