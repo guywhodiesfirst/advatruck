@@ -23,6 +23,14 @@ public interface IAdminRepository
     Task<Admin?> GetByIdAsync(Guid adminId, CancellationToken cancellationToken = default);
 
     /// <summary>
+    /// Get the admin by email.
+    /// </summary>
+    /// <param name="email">Admin's email.</param>
+    /// <param name="cancellationToken">Cancellation token.</param>
+    /// <returns>Admin.</returns>
+    Task<Admin?> GetByEmailAsync(string email, CancellationToken cancellationToken = default);
+
+    /// <summary>
     /// Add a admin to the database.
     /// </summary>
     /// <param name="admin">Admin.</param>

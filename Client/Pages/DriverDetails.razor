@@ -1,0 +1,258 @@
+@page "/drivers/{Id:guid}"
+@using Core.Models
+@using Client.Components
+@using Client.Services
+@using Microsoft.AspNetCore.Authorization
+@using Microsoft.AspNetCore.Components.Authorization
+@attribute [Authorize(Roles = "Admin, Dispatcher")]
+@inject DriverApiService DriverService
+@inject VehicleApiService VehicleService
+@inject ISnackbar Snackbar
+@inject NavigationManager NavManager
+@inject IDialogService DialogService
+
+<PageTitle>Driver Profile | Details</PageTitle>
+
+<MudContainer MaxWidth="MaxWidth.Large" Class="my-12 py-12">
+    @if (_loading)
+    {
+        <MudProgressLinear Color="Color.Primary" Indeterminate="true" Class="my-7" />
+    }
+    else if (_profile == null)
+    {
+        <MudAlert Severity="Severity.Error" Variant="Variant.Filled" Class="mt-7">Driver profile not found</MudAlert>
+    }
+    else
+    {
+        <div class="d-flex align-center mb-8">
+            <MudIconButton Icon="@Icons.Material.Filled.ArrowBack" 
+                           OnClick="@(() => NavManager.NavigateTo("/drivers"))" 
+                           Class="mr-4" />
+            <div>
+                <MudText Typo="Typo.h4" Style="font-weight: 800;">@_profile.FirstName @_profile.LastName</MudText>
+                <MudText Typo="Typo.body2" Class="mud-text-secondary">Driver ID: @_profile.Id</MudText>
+            </div>
+            <MudSpacer />
+            
+            <AuthorizeView Roles="Admin">
+                @if (_profile.Vehicle != null)
+                {
+                    <MudButton Variant="Variant.Outlined" 
+                               Color="Color.Primary" 
+                               StartIcon="@Icons.Material.Filled.Edit"
+                               OnClick="OpenEditVehicleDialog"
+                               Class="rounded-pill">
+                        Edit Vehicle
+                    </MudButton>
+                }
+                else
+                {
+                    <MudButton Variant="Variant.Filled" 
+                               Color="Color.Primary" 
+                               StartIcon="@Icons.Material.Filled.Add"
+                               OnClick="OpenAssignVehicleDialog"
+                               Class="rounded-pill">
+                        Assign Vehicle
+                    </MudButton>
+                }
+            </AuthorizeView>
+        </div>
+
+        <MudGrid>
+            <MudItem xs="12" md="4">
+                <MudCard Elevation="3" Class="rounded-lg mb-6">
+                    <MudCardContent>
+                        <div class="d-flex flex-column align-center py-4">
+                            <MudAvatar Color="Color.Primary" Style="height:100px; width:100px; font-size:2rem;" Class="mb-4">
+                                @(_profile.FirstName[0])@(_profile.LastName[0])
+                            </MudAvatar>
+                            <MudText Typo="Typo.h6">Personal Details</MudText>
+                        </div>
+                        <MudDivider DividerType="DividerType.Middle" Class="my-2" />
+                        <MudList T="string">
+                            <MudListItem Icon="@Icons.Material.Filled.Email" Text="@_profile.Email" />
+                            <MudListItem Icon="@Icons.Material.Filled.Phone" Text="@(_profile.PhoneNumber ?? "No phone")" />
+                            <MudListItem Icon="@Icons.Material.Filled.CalendarMonth">
+                                <MudText Typo="Typo.body2">Joined: @_profile.RegistrationDate.ToString("MMMM dd, yyyy")</MudText>
+                            </MudListItem>
+                        </MudList>
+                    </MudCardContent>
+                </MudCard>
+
+                <MudCard Elevation="3" Class="rounded-lg">
+                    <MudCardHeader>
+                        <CardHeaderContent>
+                            <MudText Typo="Typo.h6">Statistics</MudText>
+                        </CardHeaderContent>
+                    </MudCardHeader>
+                    <MudCardContent>
+                        <div class="d-flex align-center justify-space-between pa-2">
+                            <MudText Typo="Typo.body1">Total Loads</MudText>
+                            <MudChip T="string" Color="Color.Success" Variant="Variant.Filled" Size="Size.Small">@_profile.LoadCount</MudChip>
+                        </div>
+                    </MudCardContent>
+                </MudCard>
+            </MudItem>
+
+            <MudItem xs="12" md="8">
+                <MudGrid>
+                    <MudItem xs="12">
+                        <MudCard Elevation="3" Class="rounded-lg mb-6">
+                            <MudCardHeader>
+                                <CardHeaderAvatar>
+                                    <MudIcon Icon="@Icons.Material.Filled.LocalShipping" Color="Color.Primary" />
+                                </CardHeaderAvatar>
+                                <CardHeaderContent>
+                                    <MudText Typo="Typo.h6">Assigned Vehicle Information</MudText>
+                                </CardHeaderContent>
+                            </MudCardHeader>
+                            <MudCardContent>
+                                @if (_profile.Vehicle != null)
+                                {
+                                    <MudGrid>
+                                        <MudItem xs="12" sm="6">
+                                            <MudText Typo="Typo.caption" Class="mud-text-secondary">Model</MudText>
+                                            <MudText Typo="Typo.body1"><b>@_profile.Vehicle.Model</b></MudText>
+                                        </MudItem>
+                                        <MudItem xs="12" sm="6">
+                                            <MudText Typo="Typo.caption" Class="mud-text-secondary">License Plate</MudText>
+                                            <MudChip T="string" Color="Color.Info" Size="Size.Small" Variant="Variant.Text" Label="true">
+                                                <b>@_profile.Vehicle.PlateNumber</b>
+                                            </MudChip>
+                                        </MudItem>
+                                        
+                                        <MudItem xs="12">
+                                            <MudDivider Class="my-2" />
+                                            <MudText Typo="Typo.subtitle2" Class="mb-3">Technical Specifications</MudText>
+                                        </MudItem>
+
+                                        <MudItem xs="6" sm="3">
+                                            <MudText Typo="Typo.caption" Class="mud-text-secondary">Max Weight</MudText>
+                                            <MudText Typo="Typo.body1">@_profile.Vehicle.MaxWeight kg</MudText>
+                                        </MudItem>
+                                        <MudItem xs="6" sm="3">
+                                            <MudText Typo="Typo.caption" Class="mud-text-secondary">Length</MudText>
+                                            <MudText Typo="Typo.body1">@_profile.Vehicle.CargoSpaceLength cm</MudText>
+                                        </MudItem>
+                                        <MudItem xs="6" sm="3">
+                                            <MudText Typo="Typo.caption" Class="mud-text-secondary">Width</MudText>
+                                            <MudText Typo="Typo.body1">@_profile.Vehicle.CargoSpaceWidth cm</MudText>
+                                        </MudItem>
+                                        <MudItem xs="6" sm="3">
+                                            <MudText Typo="Typo.caption" Class="mud-text-secondary">Height</MudText>
+                                            <MudText Typo="Typo.body1">@_profile.Vehicle.CargoSpaceHeight cm</MudText>
+                                        </MudItem>
+                                    </MudGrid>
+                                }
+                                else
+                                {
+                                    <MudAlert Severity="Severity.Warning" Dense="true" Class="mt-2">No vehicle assigned.</MudAlert>
+                                }
+                            </MudCardContent>
+                        </MudCard>
+                    </MudItem>
+
+                    <MudItem xs="12">
+                        <MudCard Elevation="3" Class="rounded-lg">
+                            <MudCardHeader>
+                                <CardHeaderAvatar>
+                                    <MudIcon Icon="@Icons.Material.Filled.LocationOn" Color="Color.Error" />
+                                </CardHeaderAvatar>
+                                <CardHeaderContent>
+                                    <MudText Typo="Typo.h6">Last Known Location</MudText>
+                                </CardHeaderContent>
+                            </MudCardHeader>
+                            <MudCardContent>
+                                <MudText Typo="Typo.body1" Class="mb-2">@(_profile.LastLocationAddress ?? "Location data unavailable")</MudText>
+                                @if (_profile.LastLocationUpdate.HasValue)
+                                {
+                                    <MudText Typo="Typo.caption" Class="mud-text-secondary">
+                                        Last Updated: @_profile.LastLocationUpdate.Value.ToLocalTime().ToString("g")
+                                    </MudText>
+                                }
+                            </MudCardContent>
+                            <MudCardActions>
+                                <MudButton Variant="Variant.Text" 
+                                           Color="Color.Primary" 
+                                           StartIcon="@Icons.Material.Filled.Map"
+                                           Target="_blank"
+                                           Href="@($"https://www.google.com/maps/search/?api=1&query={Uri.EscapeDataString(_profile.LastLocationAddress ?? "")}")">
+                                    Show on Google Maps
+                                </MudButton>
+                            </MudCardActions>
+                        </MudCard>
+                    </MudItem>
+                </MudGrid>
+            </MudItem>
+        </MudGrid>
+    }
+</MudContainer>
+
+@code {
+    [Parameter] public Guid Id { get; set; }
+    private DriverProfileDto? _profile;
+    private bool _loading = true;
+
+    protected override async Task OnInitializedAsync() => await LoadProfile();
+
+    private async Task LoadProfile()
+    {
+        _loading = true;
+        try
+        {
+            _profile = await DriverService.GetProfileByIdAsync(Id);
+        }
+        catch (Exception ex)
+        {
+            Snackbar.Add($"Error: {ex.Message}", Severity.Error);
+        }
+        finally { _loading = false; }
+    }
+
+    private async Task OpenEditVehicleDialog()
+    {
+        if (_profile?.Vehicle == null) return;
+        
+        var dto = new VehicleCreateUpdateDto 
+        { 
+            Id = _profile.Vehicle.Id,
+            Model = _profile.Vehicle.Model,
+            PlateNumber = _profile.Vehicle.PlateNumber,
+            MaxWeight = _profile.Vehicle.MaxWeight,
+            CargoSpaceHeight = _profile.Vehicle.CargoSpaceHeight,
+            CargoSpaceLength = _profile.Vehicle.CargoSpaceLength,
+            CargoSpaceWidth = _profile.Vehicle.CargoSpaceWidth,
+            DriverId = _profile.Id
+        };
+
+        await ShowVehicleDialog(dto, "Update Vehicle Information");
+    }
+
+    private async Task OpenAssignVehicleDialog()
+    {
+        var dto = new VehicleCreateUpdateDto 
+        { 
+            Model = "",
+            PlateNumber = "",
+            DriverId = Id 
+        };
+
+        await ShowVehicleDialog(dto, "Assign New Vehicle");
+    }
+
+    private async Task ShowVehicleDialog(VehicleCreateUpdateDto dto, string title)
+    {
+        var parameters = new DialogParameters<VehicleDialog>();
+        parameters.Add(x => x.Vehicle, dto);
+        var options = new DialogOptions { CloseButton = true, MaxWidth = MaxWidth.Small, FullWidth = true };
+        
+        var dialog = await DialogService.ShowAsync<VehicleDialog>(title, parameters, options);
+        var result = await dialog.Result;
+
+        if (!result!.Canceled)
+        {
+            await LoadProfile();
+            Snackbar.Add(dto.Id == null ? "Vehicle assigned" : "Vehicle updated", Severity.Success);
+        }
+    }
+}

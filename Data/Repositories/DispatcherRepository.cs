@@ -14,6 +14,15 @@ public class DispatcherRepository(TmsDataContext context) : IDispatcherRepositor
             .FirstOrDefaultAsync(e => e.Id == dispatcherId, cancellationToken);
 
     /// <inheritdoc/>
+    public async Task<Dispatcher?> GetByEmailAsync(string email, CancellationToken cancellationToken = default)
+    {
+        return await context.Dispatchers
+            .Include(d => d.User)
+            .Include(d => d.Loads)
+            .FirstOrDefaultAsync(d => d.User.Email == email, cancellationToken);
+    }
+
+    /// <inheritdoc/>
     public async Task<IEnumerable<Dispatcher>> GetAllAsync(CancellationToken cancellationToken = default)
         => await context.Dispatchers
             .Include(e => e.User)

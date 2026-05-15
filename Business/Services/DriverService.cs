@@ -69,29 +69,6 @@ public class DriverService(
     }
 
     /// <inheritdoc/>
-    public async Task<DriverProfileDto?> GetProfileByEmailAsync(string email, CancellationToken cancellationToken = default)
-    {
-        var driver = await driverRepository.GetByEmailAsync(email, cancellationToken);
-
-        if (driver == null)
-        {
-            throw new TmsException($"Profile for email {email} not found", HttpStatusCode.NotFound);
-        }
-
-        return new DriverProfileDto
-        {
-            Id = driver.Id,
-            FirstName = driver.User.FirstName,
-            LastName = driver.User.LastName,
-            Email = driver.User.Email!,
-            PhoneNumber = driver.User.PhoneNumber,
-            LastLocation = driver.DriverLocations
-                .FirstOrDefault()?.Location,
-            RegistrationDate = driver.User.RegistrationDate,
-        };
-    }
-
-    /// <inheritdoc/>
     public async Task DeleteAsync(Guid id, CancellationToken cancellationToken = default)
     {
         var driver = await driverRepository.GetByIdAsync(id, cancellationToken);
@@ -102,5 +79,49 @@ public class DriverService(
         }
 
         await driverRepository.DeleteAsync(driver, cancellationToken);
+    }
+
+    /// <inheritdoc/>
+    public async Task<DriverProfileDto?> GetProfileByEmailAsync(string email, CancellationToken cancellationToken = default)
+    {
+        var driver = await driverRepository.GetByEmailAsync(email, cancellationToken);
+
+        if (driver == null)
+        {
+            throw new TmsException($"Profile for email {email} not found", HttpStatusCode.NotFound);
+        }
+
+        return MapToProfileDto(driver);
+    }
+
+    /// <inheritdoc/>
+    public async Task<DriverProfileDto?> GetProfileByIdAsync(Guid id, CancellationToken cancellationToken = default)
+    {
+        var driver = await driverRepository.GetByIdAsync(id, cancellationToken);
+
+        if (driver == null)
+        {
+            throw new TmsException($"Driver profile with ID {id} not found", HttpStatusCode.NotFound);
+        }
+
+        return MapToProfileDto(driver);
+    }
+
+    private DriverProfileDto MapToProfileDto(Driver driver)
+    {
+        return new DriverProfileDto
+        {
+            Id = driver.Id,
+            FirstName = driver.User?.FirstName ?? "N/A",
+            LastName = driver.User?.LastName ?? "N/A",
+            Email = driver.User?.Email ?? "N/A",
+            PhoneNumber = driver.User?.PhoneNumber,
+            RegistrationDate = driver.User?.RegistrationDate ?? DateTime.MinValue,
+            Note = driver.Note,
+            LoadCount = driver.Loads?.Count ?? 0,
+            LastLocationAddress = driver.DriverLocations?.OrderByDescending(l => l.UpdateTime).FirstOrDefault()?.Address,
+            LastLocationUpdate = driver.DriverLocations?.OrderByDescending(l => l.UpdateTime).FirstOrDefault()?.UpdateTime,
+            Vehicle = driver.Vehicle != null ? mapper.Map<VehicleDto>(driver.Vehicle) : null,
+        };
     }
 }

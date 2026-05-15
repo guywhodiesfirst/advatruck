@@ -1,0 +1,130 @@
+@page "/drivers"
+@using Client.Services
+@using Core.Models
+@using Microsoft.AspNetCore.Authorization
+@attribute [Authorize(Roles = "Admin, Dispatcher")]
+@inject DriverApiService DriverService
+@inject NavigationManager NavManager
+@inject ISnackbar Snackbar
+
+<PageTitle>Fleet Management | Drivers</PageTitle>
+
+<MudContainer MaxWidth="MaxWidth.ExtraLarge" Class="my-12 py-12">
+    <MudPaper Elevation="3" Class="pa-8 rounded-lg">
+        <div class="d-flex align-center mb-8">
+            <div>
+                <MudText Typo="Typo.h4" Style="font-weight: 800;">Fleet Drivers</MudText>
+                <MudText Typo="Typo.body1" Class="mud-text-secondary">Monitoring real-time location and vehicle status</MudText>
+            </div>
+            <MudSpacer />
+            <MudButton Variant="Variant.Filled" 
+                       Color="Color.Default"
+                       StartIcon="@Icons.Material.Filled.Refresh" 
+                       OnClick="LoadData" 
+                       Disabled="_loading"
+                       Class="px-6">
+                Refresh Data
+            </MudButton>
+        </div>
+
+        <MudTable Items="_drivers" Loading="_loading" Hover="true" Breakpoint="Breakpoint.Md" Elevation="0" Dense="false" Class="mt-4">
+            <HeaderContent>
+                <MudTh><MudTableSortLabel T="DriverDto" SortBy="x => x.FullName">Driver Name</MudTableSortLabel></MudTh>
+                <MudTh>Vehicle Plate</MudTh>
+                <MudTh>Last Location Address</MudTh>
+                <MudTh>Last Update</MudTh>
+                <MudTh Style="text-align:right">Actions</MudTh>
+            </HeaderContent>
+            <RowTemplate>
+                <MudTd DataLabel="Driver Name">
+                    <MudText Typo="Typo.body1" Style="font-weight: 600;">@context.FullName</MudText>
+                </MudTd>
+                <MudTd DataLabel="Vehicle Plate">
+                    @if (!string.IsNullOrEmpty(context.VehiclePlate))
+                    {
+                        <MudChip T="string" Color="Color.Info" Variant="Variant.Filled" Size="Size.Small" Icon="@Icons.Material.Filled.DirectionsCar">
+                            @context.VehiclePlate
+                        </MudChip>
+                    }
+                    else
+                    {
+                        <MudText Typo="Typo.caption" Color="Color.Error">No vehicle assigned</MudText>
+                    }
+                </MudTd>
+                <MudTd DataLabel="Last Location Address">
+                    @if (context.LastLocation != null)
+                    {
+                        <MudText Typo="Typo.body2">@context.LastLocation.Address</MudText>
+                    }
+                    else
+                    {
+                        <MudText Typo="Typo.caption" Style="opacity: 0.6">Address unavailable</MudText>
+                    }
+                </MudTd>
+                <MudTd DataLabel="Last Update">
+                    @if (context.LastLocation != null)
+                    {
+                        <MudText Typo="Typo.body2">@context.LastLocation.UpdateTime.ToLocalTime().ToString("g")</MudText>
+                    }
+                    else
+                    {
+                        <MudText Typo="Typo.body2">—</MudText>
+                    }
+                </MudTd>
+                <MudTd DataLabel="Actions" Style="text-align:right">
+                    <MudButton Variant="Variant.Outlined" 
+                               Size="Size.Small" 
+                               Color="Color.Primary"
+                               OnClick="@(() => NavManager.NavigateTo($"/drivers/{context.Id}"))"
+                               Class="rounded-pill">
+                        View Details
+                    </MudButton>
+                </MudTd>
+            </RowTemplate>
+            <NoRecordsContent>
+                <div class="d-flex flex-column align-center py-10">
+                    <MudIcon Icon="@Icons.Material.Filled.SearchOff" Size="Size.Large" Color="Color.Error" />
+                    <MudText Typo="Typo.body1" Class="mt-2">No drivers found in the system</MudText>
+                </div>
+            </NoRecordsContent>
+            <PagerContent>
+                <div class="mt-4">
+                    <MudTablePager />
+                </div>
+            </PagerContent>
+        </MudTable>
+    </MudPaper>
+</MudContainer>
+
+@code {
+    private List<DriverDto> _drivers = new();
+    private bool _loading = true;
+
+    protected override async Task OnInitializedAsync()
+    {
+        await LoadData();
+    }
+
+    private async Task LoadData()
+    {
+        _loading = true;
+        try
+        {
+            var result = await DriverService.GetAllAsync();
+            _drivers = result.ToList();
+            
+            if (!_drivers.Any())
+            {
+                Snackbar.Add("No drivers available", Severity.Info);
+            }
+        }
+        catch (Exception ex)
+        {
+            Snackbar.Add($"Error loading drivers: {ex.Message}", Severity.Error);
+        }
+        finally
+        {
+            _loading = false;
+        }
+    }
+}

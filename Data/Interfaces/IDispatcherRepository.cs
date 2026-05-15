@@ -23,6 +23,14 @@ public interface IDispatcherRepository
     Task<Dispatcher?> GetByIdAsync(Guid dispatcherId, CancellationToken cancellationToken = default);
 
     /// <summary>
+    /// Get the dispatcher by email.
+    /// </summary>
+    /// <param name="email">Dispatcher's email.</param>
+    /// <param name="cancellationToken">Cancellation token.</param>
+    /// <returns>Dispatcher.</returns>
+    Task<Dispatcher?> GetByEmailAsync(string email, CancellationToken cancellationToken = default);
+
+    /// <summary>
     /// Add a dispatcher to the database.
     /// </summary>
     /// <param name="dispatcher">Dispatcher.</param>

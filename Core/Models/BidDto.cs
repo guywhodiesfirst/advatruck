@@ -13,4 +13,8 @@ public class BidDto
     public DateTime CreatedAt { get; set; }
 
     public string? Note { get; set; }
+
+    public string? LastLocationAddress { get; set; }
+
+    public DateTime? LastLocationUpdate { get; set; }
 }

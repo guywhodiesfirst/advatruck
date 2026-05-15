@@ -1,0 +1,301 @@
+@page "/profile"
+@using Microsoft.AspNetCore.Components.Authorization
+@using System.Security.Claims
+@using Core.Models
+@using Client.Services
+@using Microsoft.AspNetCore.Authorization
+@attribute [Authorize]
+
+@inject AuthenticationStateProvider AuthStateProvider
+@inject DriverApiService DriverService
+@inject AdminApiService AdminService
+@inject DispatcherApiService DispatcherService
+@inject ISnackbar Snackbar
+
+<MudContainer MaxWidth="MaxWidth.Medium" Class="pt-16 pb-16">
+    <MudText Typo="Typo.h4" Class="mb-6" Style="font-weight: 800;">User Profile</MudText>
+
+    <MudGrid>
+        <MudItem xs="12" md="5">
+            <MudCard Elevation="4" Class="pa-6 rounded-lg text-center">
+                <MudAvatar Color="@GetRoleColor(_userRole)" Style="height:120px; width:120px; font-size:3rem;" Class="mx-auto mb-4 shadow-sm">
+                    @(!string.IsNullOrEmpty(_displayFullName) 
+                        ? _displayFullName.Split(' ').Select(n => n.FirstOrDefault()).Aggregate("", (a, b) => a + b).ToUpper() 
+                        : _userName?.ToUpper().FirstOrDefault().ToString())
+                </MudAvatar>
+                
+                <MudText Typo="Typo.h5" Style="font-weight: 700;">@(_displayFullName ?? _userName)</MudText>
+                <MudChip T="string" Color="@GetRoleColor(_userRole)" Variant="Variant.Filled" Size="Size.Small" Class="mt-1 mb-4">
+                    @_userRole?.ToUpper()
+                </MudChip>
+                
+                <MudDivider Class="my-4" />
+                
+                <div class="d-flex flex-column align-start ga-3 px-2">
+                    <div class="d-flex align-center text-break">
+                        <MudIcon Icon="@Icons.Material.Filled.Email" Size="Size.Small" Class="mr-3" Color="Color.Primary"/>
+                        <MudText Typo="Typo.body2">@_userEmail</MudText>
+                    </div>
+                    <div class="d-flex align-center">
+                        <MudIcon Icon="@Icons.Material.Filled.Phone" Size="Size.Small" Class="mr-3" Color="Color.Primary"/>
+                        <MudText Typo="Typo.body2">@(_displayPhone ?? "No phone set")</MudText>
+                    </div>
+                    <div class="d-flex align-center">
+                        <MudIcon Icon="@Icons.Material.Filled.CalendarMonth" Size="Size.Small" Class="mr-3" Color="Color.Primary"/>
+                        <MudText Typo="Typo.body2">Member since: @_registrationDate.ToString("MMMM yyyy")</MudText>
+                    </div>
+                </div>
+            </MudCard>
+        </MudItem>
+
+        <MudItem xs="12" md="7">
+            @if (_isLoading)
+            {
+                <MudPaper Class="pa-12 d-flex justify-center rounded-lg" Elevation="2">
+                    <MudProgressCircular Color="Color.Primary" Indeterminate="true" />
+                </MudPaper>
+            }
+            else
+            {
+                <AuthorizeView Roles="Driver">
+                    <Authorized>
+                        <MudCard Elevation="4" Class="rounded-lg mb-4">
+                            <MudCardHeader>
+                                <CardHeaderContent>
+                                    <MudText Typo="Typo.h6">Professional Driver Data</MudText>
+                                </CardHeaderContent>
+                                <CardHeaderActions>
+                                    <MudIconButton Icon="@Icons.Material.Filled.EditNote" Color="Color.Primary" OnClick="ToggleEditNote" />
+                                    <MudBadge Content="@_driverInfo?.LoadCount" Color="Color.Primary" Overlap="true" Class="mr-4">
+                                        <MudIcon Icon="@Icons.Material.Filled.LocalShipping" />
+                                    </MudBadge>
+                                </CardHeaderActions>
+                            </MudCardHeader>
+                            <MudCardContent>
+                                @if (_driverInfo != null)
+                                {
+                                    @if (_isEditingNote)
+                                    {
+                                        <div class="pa-2 mb-4">
+                                            <MudTextField T="string" Label="Personal Note" 
+                                                          @bind-Value="_noteEditModel.Note" 
+                                                          Lines="3" Variant="Variant.Outlined" 
+                                                          MaxLength="500" HelperText="Max 500 characters" />
+                                            <div class="d-flex justify-end ga-2 mt-3">
+                                                <MudButton Variant="Variant.Text" OnClick="ToggleEditNote">Cancel</MudButton>
+                                                <MudButton Variant="Variant.Filled" Color="Color.Primary" OnClick="UpdateDriverNote" Disabled="_isSubmitting">
+                                                    @if (_isSubmitting) { <MudProgressCircular Size="Size.Small" Indeterminate="true" Class="mr-2"/> }
+                                                    Save Changes
+                                                </MudButton>
+                                            </div>
+                                        </div>
+                                    }
+                                    else
+                                    {
+                                        <MudText Typo="Typo.body2" Class="mb-4 px-2 italic" Style="color: gray;">
+                                            <b>Bio/Note:</b> @(_driverInfo.Note ?? "No additional notes provided.")
+                                        </MudText>
+                                    }
+
+                                    <MudDivider Class="my-4" />
+
+                                    @if (_driverInfo.Vehicle != null)
+                                    {
+                                        <MudText Typo="Typo.subtitle2" Class="mb-3 ml-2" Color="Color.Primary">Assigned Vehicle</MudText>
+                                        <MudPaper Variant="Variant.Outlined" Class="pa-4 mud-bg-gray-50 rounded-lg">
+                                            <div class="d-flex justify-space-between align-center mb-3">
+                                                <MudText Typo="Typo.body1"><b>@_driverInfo.Vehicle.Model</b></MudText>
+                                                <MudChip T="string" Size="Size.Small" Color="Color.Dark" Variant="Variant.Filled">@_driverInfo.Vehicle.PlateNumber</MudChip>
+                                            </div>
+                                            <MudGrid Spacing="2">
+                                                <MudItem xs="6">
+                                                    <div class="d-flex align-center">
+                                                        <MudIcon Icon="@Icons.Material.Filled.Scale" Size="Size.Small" Class="mr-2" Color="Color.Info"/>
+                                                        <MudText Typo="Typo.body2">Max: <b>@_driverInfo.Vehicle.MaxWeight kg</b></MudText>
+                                                    </div>
+                                                </MudItem>
+                                                <MudItem xs="6">
+                                                    <div class="d-flex align-center">
+                                                        <MudIcon Icon="@Icons.Material.Filled.AspectRatio" Size="Size.Small" Class="mr-2" Color="Color.Info"/>
+                                                        <MudText Typo="Typo.body2">L×W×H (cm):</MudText>
+                                                    </div>
+                                                    <MudText Typo="Typo.caption" Class="ml-7">
+                                                        @_driverInfo.Vehicle.CargoSpaceLength × @_driverInfo.Vehicle.CargoSpaceWidth × @_driverInfo.Vehicle.CargoSpaceHeight
+                                                    </MudText>
+                                                </MudItem>
+                                            </MudGrid>
+                                        </MudPaper>
+                                    }
+                                    else
+                                    {
+                                        <MudAlert Severity="Severity.Warning" Variant="Variant.Text">No vehicle assigned to your profile.</MudAlert>
+                                    }
+                                }
+                            </MudCardContent>
+                        </MudCard>
+                    </Authorized>
+                </AuthorizeView>
+
+                <AuthorizeView Roles="Dispatcher">
+                    <Authorized>
+                        <MudCard Elevation="4" Class="pa-4 border-l-4 border-solid mud-border-info rounded-lg mb-4">
+                            <MudText Typo="Typo.h6" Class="mb-2">Operational Stats</MudText>
+                            <div class="d-flex align-center ga-4">
+                                <MudPaper Elevation="0" Class="pa-4 flex-grow-1 mud-bg-gray-100 rounded">
+                                    <MudText Typo="Typo.h4">@_dispatcherInfo?.LoadCount</MudText>
+                                    <MudText Typo="Typo.caption">Loads Managed</MudText>
+                                </MudPaper>
+                                <MudButton Variant="Variant.Filled" Color="Color.Info" FullWidth Href="/auctions">Go to Auctions</MudButton>
+                            </div>
+                        </MudCard>
+                    </Authorized>
+                </AuthorizeView>
+
+                <AuthorizeView Roles="Admin">
+                    <Authorized>
+                        <MudCard Elevation="4" Class="pa-4 border-l-4 border-solid mud-border-error rounded-lg mb-4">
+                            <MudText Typo="Typo.h6" Class="mb-2">Security Console</MudText>
+                            <MudAlert Severity="Severity.Normal" Variant="Variant.Outlined" Class="mb-3">Full administrative access granted.</MudAlert>
+                            <MudButton Variant="Variant.Filled" Color="Color.Error" StartIcon="@Icons.Material.Filled.AdminPanelSettings" FullWidth Href="/admin/users">
+                                System Overview
+                            </MudButton>
+                        </MudCard>
+                    </Authorized>
+                </AuthorizeView>
+            }
+        </MudItem>
+    </MudGrid>
+</MudContainer>
+
+@code {
+    private string? _userName;
+    private string? _userEmail;
+    private string? _userRole;
+    private Guid _userId;
+    
+    private string? _displayFullName;
+    private string? _displayPhone;
+    private DateTime _registrationDate;
+    
+    private bool _isLoading;
+    private bool _isEditingNote;
+    private bool _isSubmitting;
+
+    private DriverProfileDto? _driverInfo;
+    private AdminProfileDto? _adminInfo;
+    private DispatcherProfileDto? _dispatcherInfo;
+    
+    private DriverCreateUpdateDto _noteEditModel = new();
+
+    protected override async Task OnInitializedAsync()
+    {
+        var authState = await AuthStateProvider.GetAuthenticationStateAsync();
+        var user = authState.User;
+
+        if (user.Identity?.IsAuthenticated == true)
+        {
+            _userName = user.Identity.Name;
+            
+            _userEmail = user.FindFirst(ClaimTypes.Email)?.Value 
+                         ?? user.FindFirst("email")?.Value;
+            
+            _userRole = user.FindFirst(ClaimTypes.Role)?.Value;
+            
+            var idClaim = user.FindFirst(ClaimTypes.NameIdentifier)?.Value ?? user.FindFirst("sub")?.Value;
+            if (Guid.TryParse(idClaim, out var id)) _userId = id;
+
+            await LoadRoleSpecificData(user);
+        }
+    }
+
+    private async Task LoadRoleSpecificData(ClaimsPrincipal user)
+    {
+        _isLoading = true;
+        try
+        {
+            if (user.IsInRole("Driver"))
+            {
+                _driverInfo = await DriverService.GetProfileMeAsync();
+                if (_driverInfo != null) MapCommonFields(_driverInfo);
+            }
+            else if (user.IsInRole("Admin"))
+            {
+                _adminInfo = await AdminService.GetProfileMeAsync();
+                if (_adminInfo != null) MapCommonFields(_adminInfo);
+            }
+            else if (user.IsInRole("Dispatcher"))
+            {
+                _dispatcherInfo = await DispatcherService.GetProfileMeAsync();
+                if (_dispatcherInfo != null) MapCommonFields(_dispatcherInfo);
+            }
+        }
+        catch (Exception)
+        {
+            Snackbar.Add("Profile data synchronization failed", Severity.Warning);
+        }
+        finally
+        {
+            _isLoading = false;
+        }
+    }
+
+    private void MapCommonFields(dynamic dto)
+    {
+        if (dto != null)
+        {
+            _displayFullName = $"{dto.FirstName} {dto.LastName}";
+            _displayPhone = dto.PhoneNumber;
+            _registrationDate = dto.RegistrationDate;
+            
+            // Пріоритет імейлу з БД над імейлом з токена
+            if (!string.IsNullOrEmpty(dto.Email))
+            {
+                _userEmail = dto.Email;
+            }
+        }
+    }
+
+    private void ToggleEditNote()
+    {
+        if (_driverInfo != null)
+        {
+            _noteEditModel = new DriverCreateUpdateDto
+            {
+                Id = _driverInfo.Id,
+                UserId = _userId,
+                Note = _driverInfo.Note
+            };
+        }
+        _isEditingNote = !_isEditingNote;
+    }
+
+    private async Task UpdateDriverNote()
+    {
+        if (_driverInfo == null) return;
+        
+        _isSubmitting = true;
+        try
+        {
+            await DriverService.UpdateAsync(_noteEditModel);
+            _driverInfo.Note = _noteEditModel.Note;
+            _isEditingNote = false;
+            Snackbar.Add("Note saved", Severity.Success);
+        }
+        catch (Exception)
+        {
+            Snackbar.Add("Update failed", Severity.Error);
+        }
+        finally
+        {
+            _isSubmitting = false;
+        }
+    }
+
+    private Color GetRoleColor(string? role) => role switch
+    {
+        "Admin" => Color.Error,
+        "Dispatcher" => Color.Info,
+        "Driver" => Color.Success,
+        _ => Color.Default
+    };
+}

@@ -13,6 +13,14 @@ public class AdminRepository(TmsDataContext context) : IAdminRepository
             .Include(e => e.User)
             .FirstOrDefaultAsync(e => e.Id == adminId, cancellationToken);
 
+    /// <inheritdoc/>
+    public async Task<Admin?> GetByEmailAsync(string email, CancellationToken cancellationToken = default)
+    {
+        return await context.Admins
+            .Include(d => d.User)
+            .FirstOrDefaultAsync(d => d.User.Email == email, cancellationToken);
+    }
+
     /// <inheritdoc />
     public async Task<IEnumerable<Admin>> GetAllAsync(CancellationToken cancellationToken = default)
         => await context.Admins

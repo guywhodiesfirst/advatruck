@@ -82,7 +82,36 @@ public static class ApiRoutes
 
         public static string GetActiveLoad(Guid id) => $"api/{Version}/drivers/{id}/active-load";
 
-        public static string GetLastLocation(Guid driverId)
-            => $"api/{Version}/drivers/{driverId}/locations/last";
+        public static string GetProfileById(Guid id) => $"api/{Version}/drivers/{id}/profile";
+    }
+
+    public static class Users
+    {
+        public static string GetAll => $"api/{Version}/users";
+
+        public static string Register => $"api/{Version}/auth/register";
+    }
+
+    public static class Admins
+    {
+        public static string GetMe => $"api/{Version}/admins/me";
+    }
+
+    public static class Dispatchers
+    {
+        public static string GetMe => $"api/{Version}/dispatchers/me";
+    }
+
+    public static class Vehicles
+    {
+        public static string GetAll => $"api/{Version}/vehicles";
+
+        public static string GetById(Guid id) => $"api/{Version}/vehicles/{id}";
+
+        public static string Create => $"api/{Version}/vehicles";
+
+        public static string Update => $"api/{Version}/vehicles";
+
+        public static string Delete(Guid id) => $"api/{Version}/vehicles/{id}";
     }
 }

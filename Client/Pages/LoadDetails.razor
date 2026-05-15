@@ -4,9 +4,8 @@
 @using Microsoft.AspNetCore.Authorization
 @attribute [Authorize]
 @inject LoadApiService LoadsService
-@inject NavigationManager NavManager
 @inject ISnackbar Snackbar
-@inject IJSRuntime JS
+@inject IJSRuntime Js
 
 <PageTitle>Load Details</PageTitle>
 
@@ -35,6 +34,7 @@
     else
     {
         <MudGrid>
+            @* Left Column: Route Timeline *@
             <MudItem xs="12" md="8">
                 <MudCard Elevation="2" Class="mb-4">
                     <MudCardHeader>
@@ -47,8 +47,26 @@
                             @foreach (var stop in _load.LoadStops.OrderBy(s => s.Timestamp))
                             {
                                 <MudTimelineItem Color="@(stop.LoadLocationType == Core.Enums.LoadLocationType.Pickup ? Color.Primary : Color.Secondary)">
-                                    <MudText Typo="Typo.subtitle1">@stop.Address</MudText>
-                                    <MudText Typo="Typo.caption">@stop.LoadLocationType.ToString() • @stop.Timestamp.ToLocalTime().ToString("f")</MudText>
+                                    @* Інтеграція Google Maps для кожної адреси маршруту *@
+                                    <div class="d-flex align-center">
+                                        <MudIcon Icon="@Icons.Material.Filled.LocationOn" 
+                                                 Size="Size.Small" 
+                                                 Color="@(stop.LoadLocationType == Core.Enums.LoadLocationType.Pickup ? Color.Primary : Color.Secondary)" 
+                                                 Class="mr-1 mb-1" />
+                                        <MudLink Href="@($"https://www.google.com/maps/search/?api=1&query={Uri.EscapeDataString(stop.Address)}")"
+                                                 Target="_blank"
+                                                 Typo="Typo.subtitle1"
+                                                 Style="font-weight: 600;"
+                                                 Underline="Underline.Hover"
+                                                 Color="Color.Info">
+                                            @stop.Address
+                                        </MudLink>
+                                    </div>
+                                    
+                                    <MudText Typo="Typo.caption" Class="d-block mt-1">
+                                        @stop.LoadLocationType.ToString() • @stop.Timestamp.ToLocalTime().ToString("f")
+                                    </MudText>
+                                    
                                     @if (!string.IsNullOrEmpty(stop.Note))
                                     {
                                         <MudAlert Severity="Severity.Info" NoIcon="true" Dense="true" Class="mt-2">@stop.Note</MudAlert>
@@ -60,6 +78,7 @@
                 </MudCard>
             </MudItem>
 
+            @* Right Column: Cargo Specs & Personnel *@
             <MudItem xs="12" md="4">
                 <MudCard Elevation="2" Class="mb-4">
                     <MudCardHeader>
@@ -140,7 +159,7 @@
     
     private async Task GoBack()
     {
-        await JS.InvokeVoidAsync("history.back");
+        await Js.InvokeVoidAsync("history.back");
     }
 
     private Color GetStatusColor(Core.Enums.LoadStatus status) => status switch

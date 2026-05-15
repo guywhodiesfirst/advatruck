@@ -1,7 +1,116 @@
 ﻿@page "/"
+@using Microsoft.AspNetCore.Components.Authorization
+@inject NavigationManager Navigation
 
-<PageTitle>Dashboard</PageTitle>
+<PageTitle>Home - Advatruck TMS</PageTitle>
 
-<MudText Typo="Typo.h4">
-    Dashboard
-</MudText>
+<MudContainer MaxWidth="MaxWidth.Large" Class="mt-8 pt-16">
+    <div class="d-flex flex-column align-center text-center mb-10 pa-8 rounded-lg mud-theme-primary">
+        <MudIcon Icon="@Icons.Material.Filled.LocalShipping" Size="Size.Large" Style="font-size: 4.5rem;" Class="mb-3" />
+        <MudText Typo="Typo.h3" Style="font-weight: 800;" Class="mb-2">Advatruck TMS</MudText>
+        <MudText Typo="Typo.h6" Style="color: rgba(255, 255, 255, 0.75); max-width: 600px;">
+            A modern transport management system for streamlined logistics, load distribution, and live carrier auctions.
+        </MudText>
+    </div>
+
+    <AuthorizeView>
+        <Authorized>
+            <MudText Typo="Typo.h5" Style="font-weight: 700;" Class="mb-6">Available Modules</MudText>
+
+            <MudGrid>
+                @if (context.User.IsInRole("Dispatcher") || context.User.IsInRole("Admin"))
+                {
+                    <MudItem xs="12" sm="6" md="4">
+                        <MudCard Elevation="3" Class="rounded-lg hover-card" Style="cursor: pointer; height: 100%; transition: all 0.2s ease-in-out;" @onclick="@(() => Navigation.NavigateTo("/loads"))">
+                            <MudCardHeader>
+                                <CardHeaderAvatar>
+                                    <MudAvatar Color="Color.Primary" Variant="Variant.Filled">
+                                        <MudIcon Icon="@Icons.Material.Filled.Assignment" />
+                                    </MudAvatar>
+                                </CardHeaderAvatar>
+                                <CardHeaderContent>
+                                    <MudText Typo="Typo.h6" Style="font-weight: 600;">Loads Management</MudText>
+                                    <MudText Typo="Typo.caption">Freight & Routing</MudText>
+                                </CardHeaderContent>
+                            </MudCardHeader>
+                            <MudCardContent>
+                                <MudText Typo="Typo.body2" Class="mud-text-secondary">
+                                    Manage scheduled and active cargo shipments, track status workflows, and view real-time trip timelines.
+                                </MudText>
+                            </MudCardContent>
+                        </MudCard>
+                    </MudItem>
+
+                    <MudItem xs="12" sm="6" md="4">
+                        <MudCard Elevation="3" Class="rounded-lg hover-card" Style="cursor: pointer; height: 100%; transition: all 0.2s ease-in-out;" @onclick="@(() => Navigation.NavigateTo("/drivers"))">
+                            <MudCardHeader>
+                                <CardHeaderAvatar>
+                                    <MudAvatar Color="Color.Secondary" Variant="Variant.Filled">
+                                        <MudIcon Icon="@Icons.Material.Filled.People" />
+                                    </MudAvatar>
+                                </CardHeaderAvatar>
+                                <CardHeaderContent>
+                                    <MudText Typo="Typo.h6" Style="font-weight: 600;">Drivers & Fleet</MudText>
+                                    <MudText Typo="Typo.caption">Personnel & Tracking</MudText>
+                                </CardHeaderContent>
+                            </MudCardHeader>
+                            <MudCardContent>
+                                <MudText Typo="Typo.body2" Class="mud-text-secondary">
+                                    Monitor carrier statuses, review assigned active vehicles, and track latest recorded GPS telemetry.
+                                </MudText>
+                            </MudCardContent>
+                        </MudCard>
+                    </MudItem>
+                }
+
+                <MudItem xs="12" sm="6" md="@((context.User.IsInRole("Dispatcher") || context.User.IsInRole("Admin")) ? 4 : 12)">
+                    <MudCard Elevation="3" Class="rounded-lg hover-card" Style="cursor: pointer; height: 100%; transition: all 0.2s ease-in-out;" @onclick="@(() => Navigation.NavigateTo("/auctions"))">
+                        <MudCardHeader>
+                            <CardHeaderAvatar>
+                                <MudAvatar Color="Color.Success" Variant="Variant.Filled">
+                                    <MudIcon Icon="@Icons.Material.Filled.Gavel" />
+                                </MudAvatar>
+                            </CardHeaderAvatar>
+                            <CardHeaderContent>
+                                <MudText Typo="Typo.h6" Style="font-weight: 600;">Live Auctions</MudText>
+                                <MudText Typo="Typo.caption">Spot Market Bidding</MudText>
+                            </CardHeaderContent>
+                        </MudCardHeader>
+                        <MudCardContent>
+                            <MudText Typo="Typo.body2" Class="mud-text-secondary">
+                                Browse open freight lots, place real-time carrier offers, and automate optimal rate selection algorithms.
+                            </MudText>
+                        </MudCardContent>
+                    </MudCard>
+                </MudItem>
+            </MudGrid>
+        </Authorized>
+
+        <NotAuthorized>
+            <MudGrid Class="justify-center mt-4">
+                <MudItem xs="12" md="6" Class="text-center">
+                    <MudPaper Elevation="2" Class="pa-6 rounded-lg">
+                        <MudText Typo="Typo.h5" Style="font-weight: 700;" Class="mb-4">Welcome to the Platform</MudText>
+                        <MudText Typo="Typo.body1" Class="mud-text-secondary mb-6">
+                            To manage logistics workflows, coordinate dispatch boards, or submit live tender bids, please sign in to your corporate account.
+                        </MudText>
+                        <MudButton Variant="Variant.Filled"
+                                   Color="Color.Primary"
+                                   Size="Size.Large"
+                                   Href="/login"
+                                   StartIcon="@Icons.Material.Filled.Login">
+                            Sign In to System
+                        </MudButton>
+                    </MudPaper>
+                </MudItem>
+            </MudGrid>
+        </NotAuthorized>
+    </AuthorizeView>
+</MudContainer>
+
+<style>
+    
+    .hover-card:hover {
+        transform: translateY(-4px);
+    }
+</style>
