@@ -112,7 +112,17 @@ public class MappingProfile : Profile
         CreateMap<Bid, BidDto>()
             .ForMember(
                 dest => dest.DriverName,
-                opt => opt.MapFrom(src => $"{src.DriverCreated.User.FirstName} {src.DriverCreated.User.LastName}"));
+                opt => opt.MapFrom(src => $"{src.DriverCreated.User.FirstName} {src.DriverCreated.User.LastName}"))
+            .ForMember(
+                dest => dest.LastLocationAddress,
+                opt => opt.MapFrom(src => src.DriverCreated.DriverLocations.Any()
+                    ? src.DriverCreated.DriverLocations.OrderByDescending(l => l.UpdateTime).FirstOrDefault()!.Address
+                    : null))
+            .ForMember(
+                dest => dest.LastLocationUpdate,
+                opt => opt.MapFrom(src => src.DriverCreated.DriverLocations.Any()
+                    ? src.DriverCreated.DriverLocations.OrderByDescending(l => l.UpdateTime).FirstOrDefault()!.UpdateTime
+                    : (DateTime?)null));
 
         CreateMap<BidCreateUpdateDto, Bid>()
             .ForMember(dest => dest.CreatedAt, opt => opt.MapFrom(_ => DateTime.UtcNow))

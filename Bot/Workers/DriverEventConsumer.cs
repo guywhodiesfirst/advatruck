@@ -151,7 +151,7 @@ public class DriverEventConsumer(
 
     private async Task SendLoadAssignmentAsync(long chatId, Guid? loadId, string shortId, CancellationToken ct)
     {
-        string text = $"📦 *Призначено новий вантаж: #{shortId}*\n\n" +
+        string text = $"📦 *Призначено новий вантаж: \\#{shortId}*\n\n" +
                       "Диспетчер додав вам новий рейс\\. Натисніть кнопку нижче, щоб переглянути деталі\\.";
 
         var keyboard = KeyboardLayout.LoadDetailsKeyboard(loadId);
@@ -161,7 +161,7 @@ public class DriverEventConsumer(
 
     private async Task SendLoadDeassignmentAsync(long chatId, string shortId, CancellationToken ct)
     {
-        string text = $"🔄 *Зміна планів: #{shortId}*\n\n" +
+        string text = $"🔄 *Зміна планів: \\#{shortId}*\n\n" +
                       "Вас було знято з виконання цього рейсу диспетчером\\. Вантаж більше не закріплений за вами\\.";
 
         await bot.SendMessage(chatId, text, parseMode: ParseMode.MarkdownV2, cancellationToken: ct);
@@ -169,7 +169,7 @@ public class DriverEventConsumer(
 
     private async Task SendTripStartedAsync(long chatId, Guid? loadId, string shortId, CancellationToken ct)
     {
-        string text = $"🚀 *Час вирушати: #{shortId}*\n\n" +
+        string text = $"🚀 *Час вирушати: \\#{shortId}*\n\n" +
                       "Ваш запланований рейс тепер активний\\. Відкрийте деталі, щоб розпочати навігацію та звітність\\.";
 
         var keyboard = KeyboardLayout.LoadDetailsKeyboard(loadId);
@@ -179,7 +179,7 @@ public class DriverEventConsumer(
 
     private async Task SendLoadCancellationAsync(long chatId, string shortId, CancellationToken ct)
     {
-        string text = $"❌ *Вантаж скасовано: #{shortId}*\n\n" +
+        string text = $"❌ *Вантаж скасовано: \\#{shortId}*\n\n" +
                       "Цей рейс було скасовано диспетчером\\. Будь ласка, очікуйте на нові замовлення\\.";
 
         await bot.SendMessage(chatId, text, parseMode: ParseMode.MarkdownV2, cancellationToken: ct);

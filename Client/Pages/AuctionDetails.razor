@@ -65,23 +65,56 @@
                 </MudCard>
             </MudItem>
 
+            @* Right Column: Bids Table with Location Info *@
             <MudItem xs="12" md="8">
                 <MudTable Items="_lot.Bids" Hover="true" Elevation="2" Dense="true" FixedHeader="true" Height="450px">
                     <ToolBarContent>
-                        <MudText Typo="Typo.h6">Driver Bids @_lot.Bids.Count</MudText>
+                        <MudText Typo="Typo.h6">Driver Bids (@_lot.Bids.Count)</MudText>
                     </ToolBarContent>
                     <HeaderContent>
-                        <MudTh>Driver</MudTh>
+                        <MudTh>Driver & Location</MudTh>
                         <MudTh>Rate</MudTh>
-                        <MudTh>Timestamp</MudTh>
+                        <MudTh>Bid Timestamp</MudTh>
+                        <MudTh>Location Updated</MudTh>
                         <MudTh>Bid ID</MudTh>
                     </HeaderContent>
                     <RowTemplate>
-                        <MudTd DataLabel="Driver">@context.DriverName</MudTd>
+                        <MudTd DataLabel="Driver & Location">
+                            <div class="d-flex flex-column">
+                                <MudText Typo="Typo.body1" Style="font-weight: 600;">@context.DriverName</MudText>
+                                @if (!string.IsNullOrEmpty(context.LastLocationAddress))
+                                {
+                                    <div class="d-flex align-center mt-1">
+                                        <MudIcon Icon="@Icons.Material.Filled.LocationOn" Size="Size.Small" Color="Color.Error" Class="mr-1" />
+                                        <MudLink Href="@($"https://www.google.com/maps/search/?api=1&query={Uri.EscapeDataString(context.LastLocationAddress)}")"
+                                                 Target="_blank"
+                                                 Typo="Typo.caption"
+                                                 Underline="Underline.Hover"
+                                                 Color="Color.Info">
+                                            @context.LastLocationAddress
+                                        </MudLink>
+                                    </div>
+                                }
+                                else
+                                {
+                                    <MudText Typo="Typo.caption" Class="mud-text-secondary">Location unknown</MudText>
+                                }
+                            </div>
+                        </MudTd>
                         <MudTd DataLabel="Rate">
                             <MudText Color="Color.Success" Typo="Typo.body1"><b>₴@context.Rate</b></MudText>
                         </MudTd>
-                        <MudTd DataLabel="Timestamp">@context.CreatedAt.ToLocalTime().ToString("g")</MudTd>
+                        <MudTd DataLabel="Bid Timestamp">@context.CreatedAt.ToLocalTime().ToString("g")</MudTd>
+                        <MudTd DataLabel="Location Updated">
+                            @if (context.LastLocationUpdate.HasValue)
+                            {
+                                <MudText Typo="Typo.body2">@context.LastLocationUpdate.Value.ToLocalTime().ToString("g")</MudText>
+                            }
+                            else
+                            {
+                                <MudText Typo="Typo.caption" Class="mud-text-secondary">—</MudText>
+                            }
+                        </MudTd>
                         <MudTd DataLabel="Bid ID">@context.Id.ToString().Substring(0, 8)</MudTd>
                     </RowTemplate>
                     <NoRecordsContent>
