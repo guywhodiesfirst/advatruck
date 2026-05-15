@@ -25,8 +25,12 @@ public class DispatcherService(
     {
         var entity = await repository.GetByIdAsync(id, cancellationToken);
 
-        return entity == null ?
-            throw new TmsException($"Dispatcher with ID {id} not found", HttpStatusCode.NotFound) : mapper.Map<DispatcherDto>(entity);
+        if (entity == null)
+        {
+            throw new TmsException($"Dispatcher with ID {id} not found", HttpStatusCode.NotFound);
+        }
+
+        return mapper.Map<DispatcherDto>(entity);
     }
 
     /// <inheritdoc/>
@@ -75,5 +79,45 @@ public class DispatcherService(
         }
 
         await repository.DeleteAsync(entity, cancellationToken);
+    }
+
+    /// <inheritdoc/>
+    public async Task<DispatcherProfileDto?> GetProfileByEmailAsync(string email, CancellationToken cancellationToken = default)
+    {
+        var dispatcher = await repository.GetByEmailAsync(email, cancellationToken);
+
+        if (dispatcher == null)
+        {
+            throw new TmsException($"Profile for email {email} not found", HttpStatusCode.NotFound);
+        }
+
+        return MapToProfileDto(dispatcher);
+    }
+
+    /// <inheritdoc/>
+    public async Task<DispatcherProfileDto?> GetProfileByIdAsync(Guid id, CancellationToken cancellationToken = default)
+    {
+        var dispatcher = await repository.GetByIdAsync(id, cancellationToken);
+
+        if (dispatcher == null)
+        {
+            throw new TmsException($"Dispatcher profile with ID {id} not found", HttpStatusCode.NotFound);
+        }
+
+        return MapToProfileDto(dispatcher);
+    }
+
+    private static DispatcherProfileDto MapToProfileDto(Dispatcher dispatcher)
+    {
+        return new DispatcherProfileDto
+        {
+            Id = dispatcher.Id,
+            FirstName = dispatcher.User?.FirstName ?? "N/A",
+            LastName = dispatcher.User?.LastName ?? "N/A",
+            Email = dispatcher.User?.Email ?? "N/A",
+            PhoneNumber = dispatcher.User?.PhoneNumber,
+            RegistrationDate = dispatcher.User?.RegistrationDate ?? DateTime.MinValue,
+            LoadCount = dispatcher.Loads?.Count ?? 0,
+        };
     }
 }

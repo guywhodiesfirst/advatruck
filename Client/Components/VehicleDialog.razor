@@ -1,0 +1,112 @@
+@using Core.Models
+@using Client.Services
+@inject VehicleApiService VehicleService
+@inject ISnackbar Snackbar
+
+<MudDialog>
+    <TitleContent>
+        <MudText Typo="Typo.h6">
+            <MudIcon Icon="@(Vehicle.Id == null ? Icons.Material.Filled.Add : Icons.Material.Filled.Edit)" Class="mr-3 mb-n1" />
+            @(Vehicle.Id == null ? "Assign New Vehicle" : "Edit Vehicle")
+        </MudText>
+    </TitleContent>
+    <DialogContent>
+        <MudForm @ref="_form" Model="@Vehicle">
+            <MudGrid Spacing="2">
+                <MudItem xs="12">
+                    <MudTextField Label="Model" 
+                                  @bind-Value="Vehicle.Model" 
+                                  Required="true" 
+                                  Variant="Variant.Outlined" 
+                                  Margin="Margin.Dense" />
+                </MudItem>
+                <MudItem xs="12">
+                    <MudTextField Label="Plate Number" 
+                                  @bind-Value="Vehicle.PlateNumber" 
+                                  Required="true" 
+                                  Variant="Variant.Outlined" 
+                                  Margin="Margin.Dense" />
+                </MudItem>
+                <MudItem xs="6">
+                    <MudNumericField Label="Max Weight (kg)" 
+                                     @bind-Value="Vehicle.MaxWeight" 
+                                     Variant="Variant.Outlined" 
+                                     Margin="Margin.Dense" />
+                </MudItem>
+                <MudItem xs="6">
+                    <MudNumericField Label="Height (cm)" 
+                                     @bind-Value="Vehicle.CargoSpaceHeight" 
+                                     Variant="Variant.Outlined" 
+                                     Margin="Margin.Dense" />
+                </MudItem>
+                <MudItem xs="6">
+                    <MudNumericField Label="Length (cm)" 
+                                     @bind-Value="Vehicle.CargoSpaceLength" 
+                                     Variant="Variant.Outlined" 
+                                     Margin="Margin.Dense" />
+                </MudItem>
+                <MudItem xs="6">
+                    <MudNumericField Label="Width (cm)" 
+                                     @bind-Value="Vehicle.CargoSpaceWidth" 
+                                     Variant="Variant.Outlined" 
+                                     Margin="Margin.Dense" />
+                </MudItem>
+            </MudGrid>
+        </MudForm>
+    </DialogContent>
+    <DialogActions>
+        <MudButton OnClick="Cancel">Cancel</MudButton>
+        <MudButton Color="Color.Primary" 
+                   Variant="Variant.Filled" 
+                   OnClick="Submit" 
+                   Disabled="@_processing">
+            @if (_processing)
+            {
+                <MudProgressCircular Size="Size.Small" Indeterminate="true" Class="mr-2"/>
+            }
+            @(Vehicle.Id == null ? "Create & Assign" : "Save Changes")
+        </MudButton>
+    </DialogActions>
+</MudDialog>
+
+@code {
+    [CascadingParameter] 
+    private IMudDialogInstance MudDialog { get; set; } = null!;
+
+    [Parameter] 
+    public VehicleCreateUpdateDto Vehicle { get; set; } = null!;
+
+    private MudForm _form = null!;
+    private bool _processing;
+
+    private async Task Submit()
+    {
+        await _form.ValidateAsync();
+        if (!_form.IsValid) return;
+
+        _processing = true;
+        try
+        {
+            if (Vehicle.Id == null)
+            {
+                await VehicleService.CreateAsync(Vehicle);
+            }
+            else
+            {
+                await VehicleService.UpdateAsync(Vehicle);
+            }
+            
+            MudDialog.Close(DialogResult.Ok(true));
+        }
+        catch (Exception ex)
+        {
+            Snackbar.Add($"Operation failed: {ex.Message}", Severity.Error);
+        }
+        finally
+        {
+            _processing = false;
+        }
+    }
+
+    private void Cancel() => MudDialog.Cancel();
+}

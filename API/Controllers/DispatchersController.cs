@@ -1,3 +1,7 @@
+using System.Net;
+using System.Security.Claims;
+using Core.Exceptions;
+
 namespace API.Controllers;
 
 using Asp.Versioning;
@@ -45,5 +49,19 @@ public class DispatchersController(IDispatcherService service) : ControllerBase
     {
         await service.DeleteAsync(id, cancellationToken);
         return NoContent();
+    }
+
+    [HttpGet("me")]
+    [Authorize(Roles = "Dispatcher")]
+    public async Task<ActionResult<DispatcherProfileDto>> GetProfile(CancellationToken cancellationToken)
+    {
+        var email = User.FindFirstValue(ClaimTypes.Email);
+        if (string.IsNullOrEmpty(email))
+        {
+            throw new TmsException("User email claim not found in token", HttpStatusCode.Unauthorized);
+        }
+
+        var profile = await service.GetProfileByEmailAsync(email, cancellationToken);
+        return Ok(profile);
     }
 }

@@ -45,4 +45,20 @@ public interface IDispatcherService
     /// <param name="cancellationToken">Cancellation token.</param>
     /// <returns>Task representing async operation.</returns>
     Task DeleteAsync(Guid id, CancellationToken cancellationToken = default);
+
+    /// <summary>
+    /// Retrieves full dispatcher profile information by email.
+    /// </summary>
+    /// <param name="email">Dispatcher's email address.</param>
+    /// <param name="cancellationToken">Cancellation token.</param>
+    /// <returns>Dispatcher profile data transfer object.</returns>
+    Task<DispatcherProfileDto?> GetProfileByEmailAsync(string email, CancellationToken cancellationToken = default);
+
+    /// <summary>
+    /// Retrieves full dispatcher profile information by ID.
+    /// </summary>
+    /// <param name="id">Dispatcher's ID.</param>
+    /// <param name="cancellationToken">Cancellation token.</param>
+    /// <returns>Dispatcher profile data transfer object.</returns>
+    Task<DispatcherProfileDto?> GetProfileByIdAsync(Guid id, CancellationToken cancellationToken = default);
 }

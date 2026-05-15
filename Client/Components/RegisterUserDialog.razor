@@ -1,0 +1,107 @@
+@using Client.Services
+@using Core.Models
+@inject UserApiService UserService
+@inject ISnackbar Snackbar
+
+<MudDialog>
+    <TitleContent>
+        <MudText Typo="Typo.h6">
+            <MudIcon Icon="@Icons.Material.Filled.PersonAdd" Class="mr-3 mb-n1"/>
+            Register New User
+        </MudText>
+    </TitleContent>
+    <DialogContent>
+        <MudForm @ref="_form" @bind-IsValid="@_success">
+            <MudGrid Spacing="2">
+                <MudItem xs="12" sm="6">
+                    <MudTextField T="string" Label="First Name" @bind-Value="_firstName" 
+                                  Required="true" RequiredError="First name is required!" 
+                                  Variant="Variant.Outlined" Margin="Margin.Dense" />
+                </MudItem>
+                <MudItem xs="12" sm="6">
+                    <MudTextField T="string" Label="Last Name" @bind-Value="_lastName" 
+                                  Required="true" RequiredError="Last name is required!" 
+                                  Variant="Variant.Outlined" Margin="Margin.Dense" />
+                </MudItem>
+                <MudItem xs="12">
+                    <MudTextField T="string" Label="Email" @bind-Value="_email" 
+                                  InputType="InputType.Email" Required="true" 
+                                  RequiredError="Email is required!" Variant="Variant.Outlined" Margin="Margin.Dense" />
+                </MudItem>
+                <MudItem xs="12">
+                    <MudTextField T="string" Label="Phone Number" @bind-Value="_phoneNumber" 
+                                  InputType="InputType.Telephone" Required="true" 
+                                  RequiredError="Phone number is required!" 
+                                  Placeholder="+380..." Variant="Variant.Outlined" Margin="Margin.Dense" />
+                </MudItem>
+                <MudItem xs="12">
+                    <MudSelect T="string" Label="System Role" @bind-Value="_role" 
+                               Required="true" AnchorOrigin="Origin.BottomCenter" 
+                               Variant="Variant.Outlined" Margin="Margin.Dense">
+                        <MudSelectItem Value="@("Driver")">Driver</MudSelectItem>
+                        <MudSelectItem Value="@("Dispatcher")">Dispatcher</MudSelectItem>
+                        <MudSelectItem Value="@("Admin")">Administrator</MudSelectItem>
+                    </MudSelect>
+                </MudItem>
+                <MudItem xs="12">
+                    <MudTextField T="string" Label="Password" @bind-Value="_password" 
+                                  InputType="InputType.Password" Required="true" 
+                                  RequiredError="Password is required!" 
+                                  Variant="Variant.Outlined" Margin="Margin.Dense" />
+                </MudItem>
+            </MudGrid>
+        </MudForm>
+    </DialogContent>
+    <DialogActions>
+        <MudButton OnClick="Cancel" Class="px-6">Cancel</MudButton>
+        <MudButton Color="Color.Primary" Variant="Variant.Filled" 
+                   OnClick="Submit" Disabled="@(!_success)" Class="px-6">
+            Create Account
+        </MudButton>
+    </DialogActions>
+</MudDialog>
+
+@code {
+    [CascadingParameter] IMudDialogInstance MudDialog { get; set; } = default!;
+    
+    private MudForm _form = default!;
+    private bool _success;
+
+    private string _email = "";
+    private string _password = "";
+    private string _firstName = "";
+    private string _lastName = "";
+    private string _role = "Driver";
+    private string _phoneNumber = "";
+
+    private void Cancel() => MudDialog.Cancel();
+
+    private async Task Submit()
+    {
+        await _form.ValidateAsync();
+        if (_form.IsValid)
+        {
+            // Створюємо DTO з усіма полями, включаючи PhoneNumber
+            var request = new RegistrationRequestDto(
+                _email, 
+                _password, 
+                _firstName, 
+                _lastName, 
+                _role, 
+                _phoneNumber
+            );
+
+            var result = await UserService.RegisterAsync(request);
+
+            if (result != null)
+            {
+                Snackbar.Add($"User {_email} created successfully", Severity.Success);
+                MudDialog.Close(DialogResult.Ok(true));
+            }
+            else
+            {
+                Snackbar.Add("Could not create user. Check if email is unique.", Severity.Error);
+            }
+        }
+    }
+}

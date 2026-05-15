@@ -22,6 +22,11 @@ public class DriverApiService(HttpClient httpClient)
         return await httpClient.GetFromJsonAsync<DriverProfileDto>(ApiRoutes.Drivers.GetMe, ct);
     }
 
+    public async Task<DriverProfileDto?> GetProfileByIdAsync(Guid id, CancellationToken ct = default)
+    {
+        return await httpClient.GetFromJsonAsync<DriverProfileDto>(ApiRoutes.Drivers.GetProfileById(id), ct);
+    }
+
     public async Task<DriverDto?> UpdateAsync(DriverCreateUpdateDto dto, CancellationToken ct = default)
     {
         var response = await httpClient.PutAsJsonAsync(ApiRoutes.Drivers.Update, dto, ct);

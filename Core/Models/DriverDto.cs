@@ -11,4 +11,6 @@ public class DriverDto
     public string? VehiclePlate { get; set; }
 
     public string? Note { get; set; }
+
+    public DriverLocationDto? LastLocation { get; set; }
 }

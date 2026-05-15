@@ -1,0 +1,88 @@
+@page "/admin/users"
+@using Client.Components
+@using Client.Services
+@using Core.Models
+@using Microsoft.AspNetCore.Authorization
+@attribute [Authorize(Roles = "Admin")]
+@inject UserApiService UserService
+@inject IDialogService DialogService
+
+<MudContainer MaxWidth="MaxWidth.Large" Class="pt-16">
+    <MudPaper Elevation="3" Class="pa-6">
+        <MudStack Row="true" AlignItems="AlignItems.Center" Class="mb-6">
+            <div>
+                <MudText Typo="Typo.h4">System Users</MudText>
+                <MudText Typo="Typo.subtitle1" Class="mud-text-secondary">Manage access and roles</MudText>
+            </div>
+            <MudSpacer />
+            <MudButton Variant="Variant.Filled" 
+                       Color="Color.Primary" 
+                       StartIcon="@Icons.Material.Filled.Add"
+                       OnClick="OpenRegisterDialog">
+                Create New User
+            </MudButton>
+        </MudStack>
+
+        <MudTable Items="_users" Loading="_loading" Hover="true" Breakpoint="Breakpoint.Sm" Elevation="0">
+            <HeaderContent>
+                <MudTh>User</MudTh>
+                <MudTh>Email</MudTh>
+                <MudTh>Phone</MudTh> @* Додано *@
+                <MudTh>Role</MudTh>
+                <MudTh>Registration Date</MudTh>
+            </HeaderContent>
+            <RowTemplate>
+                <MudTd DataLabel="User">
+                    <div class="d-flex align-center">
+                        <MudAvatar Color="@GetRoleColor(context.Role)" Size="Size.Small" Class="mr-3">
+                            @context.FirstName[0]
+                        </MudAvatar>
+                        <MudText>@context.FirstName @context.LastName</MudText>
+                    </div>
+                </MudTd>
+                <MudTd DataLabel="Email">@context.Email</MudTd>
+                <MudTd DataLabel="Phone">@context.PhoneNumber</MudTd> @* Додано *@
+                <MudTd DataLabel="Role">
+                    <MudChip T="string" Color="@GetRoleColor(context.Role)" Variant="Variant.Text" Size="Size.Small">
+                        @context.Role
+                    </MudChip>
+                </MudTd>
+                <MudTd DataLabel="Joined">@context.RegistrationDate.ToLocalTime().ToString("yyyy-MM-dd")</MudTd>
+            </RowTemplate>
+            <PagerContent>
+                <MudTablePager />
+            </PagerContent>
+        </MudTable>
+    </MudPaper>
+</MudContainer>
+
+@code {
+    private List<UserProfileDto> _users = new();
+    private bool _loading = true;
+
+    protected override async Task OnInitializedAsync() => await LoadData();
+
+    private async Task LoadData()
+    {
+        _loading = true;
+        _users = await UserService.GetAllAsync();
+        _loading = false;
+    }
+
+    private async Task OpenRegisterDialog()
+    {
+        var options = new DialogOptions { CloseButton = true, MaxWidth = MaxWidth.Small, FullWidth = true };
+        var dialog = await DialogService.ShowAsync<RegisterUserDialog>("User Registration", options);
+        var result = await dialog.Result;
+
+        if (result is { Canceled: false }) await LoadData();
+    }
+
+    private Color GetRoleColor(string? role) => role switch
+    {
+        "Admin" => Color.Error,
+        "Dispatcher" => Color.Info,
+        "Driver" => Color.Success,
+        _ => Color.Default
+    };
+}

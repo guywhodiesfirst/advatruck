@@ -1,6 +1,6 @@
 namespace Core.Models;
 
-public class DispatcherProfileDto : ProfileDto
+public class AdminProfileDto : ProfileDto
 {
     public Guid Id { get; set; }
 
@@ -13,6 +13,4 @@ public class DispatcherProfileDto : ProfileDto
     public string? PhoneNumber { get; set; }
 
     public DateTime RegistrationDate { get; set; }
-
-    public int LoadCount { get; set; }
 }

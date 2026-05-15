@@ -20,6 +20,10 @@ builder.Services.AddScoped<LoadApiService>();
 builder.Services.AddScoped<AuctionLotApiService>();
 builder.Services.AddScoped<BidApiService>();
 builder.Services.AddScoped<DriverApiService>();
+builder.Services.AddScoped<UserApiService>();
+builder.Services.AddScoped<AdminApiService>();
+builder.Services.AddScoped<DispatcherApiService>();
+builder.Services.AddScoped<VehicleApiService>();
 
 builder.Services.AddScoped<JwtAuthenticationStateProvider>();
 builder.Services.AddScoped<AuthenticationStateProvider>(sp =>

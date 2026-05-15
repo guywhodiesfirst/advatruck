@@ -53,4 +53,12 @@ public interface IDriverService
     /// <param name="cancellationToken">Cancellation token.</param>
     /// <returns>Driver profile data transfer object.</returns>
     Task<DriverProfileDto?> GetProfileByEmailAsync(string email, CancellationToken cancellationToken = default);
+
+    /// <summary>
+    /// Retrieves full driver profile information by ID.
+    /// </summary>
+    /// <param name="id">Driver's ID.</param>
+    /// <param name="cancellationToken">Cancellation token.</param>
+    /// <returns>Driver profile data transfer object.</returns>
+    Task<DriverProfileDto?> GetProfileByIdAsync(Guid id, CancellationToken cancellationToken = default);
 }

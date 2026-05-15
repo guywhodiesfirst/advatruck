@@ -45,4 +45,20 @@ public interface IAdminService
     /// <param name="cancellationToken">Cancellation token.</param>
     /// <returns>Task representing async operation.</returns>
     Task DeleteAsync(Guid id, CancellationToken cancellationToken = default);
+
+    /// <summary>
+    /// Retrieves full admin profile information by email.
+    /// </summary>
+    /// <param name="email">Admin's email address.</param>
+    /// <param name="cancellationToken">Cancellation token.</param>
+    /// <returns>Admin profile data transfer object.</returns>
+    Task<AdminProfileDto?> GetProfileByEmailAsync(string email, CancellationToken cancellationToken = default);
+
+    /// <summary>
+    /// Retrieves full admin profile information by ID.
+    /// </summary>
+    /// <param name="id">Admin's ID.</param>
+    /// <param name="cancellationToken">Cancellation token.</param>
+    /// <returns>Admin profile data transfer object.</returns>
+    Task<AdminProfileDto?> GetProfileByIdAsync(Guid id, CancellationToken cancellationToken = default);
 }

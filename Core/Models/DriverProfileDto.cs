@@ -19,5 +19,13 @@ public class DriverProfileDto : ProfileDto
 
     public string? PhoneNumber { get; set; }
 
-    public GeoPoint? LastLocation { get; set; }
+    public string? LastLocationAddress { get; set; }
+
+    public DateTime? LastLocationUpdate { get; set; }
+
+    public VehicleDto? Vehicle { get; set; }
+
+    public int LoadCount { get; set; }
+
+    public string? Note { get; set; }
 }

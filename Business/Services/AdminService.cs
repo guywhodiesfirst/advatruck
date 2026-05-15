@@ -80,4 +80,43 @@ public class AdminService(
 
         await repository.DeleteAsync(entity, cancellationToken);
     }
+
+    /// <inheritdoc/>
+    public async Task<AdminProfileDto?> GetProfileByEmailAsync(string email, CancellationToken cancellationToken = default)
+    {
+        var admin = await repository.GetByEmailAsync(email, cancellationToken);
+
+        if (admin == null)
+        {
+            throw new TmsException($"Profile for email {email} not found", HttpStatusCode.NotFound);
+        }
+
+        return MapToProfileDto(admin);    }
+
+    /// <inheritdoc/>
+    public async Task<AdminProfileDto?> GetProfileByIdAsync(Guid id, CancellationToken cancellationToken = default)
+    {
+        // Припускаємо, що GetByIdAsync у репозиторії також включає сутність User
+        var admin = await repository.GetByIdAsync(id, cancellationToken);
+
+        if (admin == null)
+        {
+            throw new TmsException($"Admin profile with ID {id} not found", HttpStatusCode.NotFound);
+        }
+
+        return MapToProfileDto(admin);
+    }
+
+    private static AdminProfileDto MapToProfileDto(Admin admin)
+    {
+        return new AdminProfileDto
+        {
+            Id = admin.Id,
+            FirstName = admin.User?.FirstName ?? "N/A",
+            LastName = admin.User?.LastName ?? "N/A",
+            Email = admin.User?.Email ?? "N/A",
+            PhoneNumber = admin.User?.PhoneNumber,
+            RegistrationDate = admin.User?.RegistrationDate ?? DateTime.MinValue,
+        };
+    }
 }

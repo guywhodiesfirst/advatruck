@@ -32,6 +32,14 @@ public class DriversController(
         return Ok(result);
     }
 
+    [Authorize(Roles = "Dispatcher,Admin")]
+    [HttpGet("{id:guid}/profile")]
+    public async Task<ActionResult<DriverProfileDto>> GetProfileById(Guid id, CancellationToken cancellationToken)
+    {
+        var profile = await driverService.GetProfileByIdAsync(id, cancellationToken);
+        return Ok(profile);
+    }
+
     [Authorize(Roles = "Driver")]
     [HttpGet("me")]
     public async Task<ActionResult<DriverProfileDto>> GetProfile(CancellationToken cancellationToken)
@@ -54,7 +62,7 @@ public class DriversController(
         return CreatedAtAction(nameof(GetById), new { v = "1", id }, id);
     }
 
-    [Authorize(Roles = "Admin")]
+    [Authorize(Roles = "Admin, Driver")]
     [HttpPut]
     public async Task<ActionResult<DriverDto>> Update([FromBody] DriverCreateUpdateDto dto, CancellationToken cancellationToken)
     {
