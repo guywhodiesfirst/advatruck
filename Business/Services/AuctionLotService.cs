@@ -59,14 +59,14 @@ public class AuctionLotService(
     }
 
     /// <inheritdoc/>
-    public async Task<AuctionLotDto> UpdateAsync(AuctionLotCreateUpdateDto dto, CancellationToken cancellationToken = default)
+    public async Task<AuctionLotDto> UpdateAsync(Guid id, AuctionLotCreateUpdateDto dto, CancellationToken cancellationToken = default)
     {
-        if (dto.Id == Guid.Empty)
+        if (id == Guid.Empty)
         {
             throw new TmsException("AuctionLot ID is required for update", HttpStatusCode.BadRequest);
         }
 
-        var existingEntity = await repository.GetByIdAsync(dto.Id, cancellationToken);
+        var existingEntity = await repository.GetByIdAsync(id, cancellationToken);
         if (existingEntity == null)
         {
             throw new TmsException("Cannot update: auctionLot not found", HttpStatusCode.NotFound);

@@ -53,10 +53,10 @@ public class AuctionLotsController(IAuctionLotService service) : ControllerBase
     }
 
     [Authorize(Roles = "Dispatcher")]
-    [HttpPut]
-    public async Task<ActionResult<AuctionLotDto>> Update([FromBody] AuctionLotCreateUpdateDto dto, CancellationToken cancellationToken)
+    [HttpPut("{id:guid}")]
+    public async Task<ActionResult<AuctionLotDto>> Update(Guid id, [FromBody] AuctionLotCreateUpdateDto dto, CancellationToken cancellationToken)
     {
-        var result = await service.UpdateAsync(dto, cancellationToken);
+        var result = await service.UpdateAsync(id, dto, cancellationToken);
         return Ok(result);
     }
 

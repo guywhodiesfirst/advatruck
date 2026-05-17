@@ -25,9 +25,9 @@ public class AuctionLotApiService(HttpClient httpClient)
             : null;
     }
 
-    public async Task<AuctionLotDto?> UpdateAsync(AuctionLotCreateUpdateDto dto)
+    public async Task<AuctionLotDto?> UpdateAsync(Guid id, AuctionLotCreateUpdateDto dto)
     {
-        var response = await httpClient.PutAsJsonAsync(ApiRoutes.AuctionLots.Update, dto);
+        var response = await httpClient.PutAsJsonAsync(ApiRoutes.AuctionLots.Update(id), dto);
         return response.IsSuccessStatusCode
             ? await response.Content.ReadFromJsonAsync<AuctionLotDto>()
             : null;
