@@ -15,21 +15,17 @@ public class UserService(
 {
     public async Task<IEnumerable<UserProfileDto>> GetAllUsersAsync(CancellationToken cancellationToken)
     {
-        var usersWithRoles = await userManager.Users
+        var users = await userManager.Users
             .AsNoTracking()
-            .Select(user => new
-            {
-                User = user,
-                Role = userManager.GetRolesAsync(user).Result.FirstOrDefault(),
-            })
             .ToListAsync(cancellationToken);
 
         var userDtos = new List<UserProfileDto>();
 
-        foreach (var item in usersWithRoles)
+        foreach (var user in users)
         {
-            var dto = mapper.Map<UserProfileDto>(item.User);
-            dto.Role = item.Role ?? "User";
+            var dto = mapper.Map<UserProfileDto>(user);
+            var roles = await userManager.GetRolesAsync(user);
+            dto.Role = roles.FirstOrDefault() ?? "User";
             userDtos.Add(dto);
         }
 

@@ -84,14 +84,46 @@
       - "3000:80"
     depends_on:
       - tms-api
+  
+  tms-bot:
+    image: tms-bot:latest
+    container_name: tms-bot
+    restart: unless-stopped
+    build:
+      context: .
+      dockerfile: Bot/Dockerfile
+    ports:
+      - "5053:8080"
+    environment:
+      - ASPNETCORE_ENVIRONMENT=Development
+      - TelegramBot__TelegramToken=${TELEGRAM_TOKEN}
+      - TelegramBot__WebhookUrl=${TELEGRAM_WEBHOOK_URL}
+      - TelegramBot__RedisConnectionString=tms-redis:6379
+      - TelegramBot__BaseApiUrl=http://tms-api:8080
+      - TelegramBot__ApiVersion=1
+      - RabbitMq__HostName=tms-rabbitmq
+      - RabbitMq__UserName=admin
+      - RabbitMq__Password=admin
+      - RabbitMq__Port=5672
+      - ConnectionStrings__Redis=tms-redis:6379
+    depends_on:
+      tms-redis:
+        condition: service_healthy
+      tms-rabbitmq:
+        condition: service_healthy
+      tms-api:
+        condition: service_started
 
+  tms-ngrok:
+    image: ngrok/ngrok:latest
+    container_name: tms-ngrok
+    restart: unless-stopped
+    command: http tms-bot:8080
+    environment:
+      NGROK_AUTHTOKEN: ${NGROK_AUTHTOKEN}
+    ports:
+      - "4040:4040"
+    depends_on:
+      - tms-bot
 volumes:
   tms_postgres_data:
-  ### Uncomment when tms-bot is ready to be exposed to the internet for testing with ngrok
-  # ngrok:
-  #   image: ngrok/ngrok:latest
-  #   command: http localdev.docker:5053
-  #   environment:
-  #     NGROK_AUTHTOKEN: ${NGROK_AUTHTOKEN}
-  #   ports:
-  #     - "4040:4040"
