@@ -20,7 +20,7 @@ public class CallbackQueryService(
 
         await bot.AnswerCallbackQuery(callbackQuery.Id, cancellationToken: ct);
 
-        if (data.StartsWith("show_stops:") || data.StartsWith("load_details:"))
+        if (data.StartsWith("load_details:"))
         {
             var loadIdStr = data.Split(':')[1];
             if (!Guid.TryParse(loadIdStr, out var loadId))

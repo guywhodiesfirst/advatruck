@@ -1,8 +1,10 @@
 using Bot;
 using Bot.Handlers;
 using Bot.Interfaces;
+using Bot.Options;
 using Bot.Services;
 using Bot.Workers;
+using Core.Options;
 using Data.Interfaces;
 using Data.State;
 using Microsoft.AspNetCore.Mvc;
@@ -45,6 +47,22 @@ try
         .Validate(
             o => o.LocationUpdateIntervalMinutes > 0,
             $"{nameof(TelegramBotOptions.LocationUpdateIntervalMinutes)} is required");
+
+    builder.Services
+        .AddOptions<RabbitMqOptions>()
+        .Bind(builder.Configuration.GetSection(RabbitMqOptions.ConfigName))
+        .Validate(
+            o => !string.IsNullOrWhiteSpace(o.HostName),
+            $"{nameof(RabbitMqOptions.HostName)} is required")
+        .Validate(
+            o => !string.IsNullOrWhiteSpace(o.UserName),
+            $"{nameof(RabbitMqOptions.UserName)} is required")
+        .Validate(
+            o => !string.IsNullOrWhiteSpace(o.Password),
+            $"{nameof(RabbitMqOptions.Password)} is required")
+        .Validate(
+            o => o.Port > 0,
+            $"{nameof(RabbitMqOptions.Port)} must be greater than 0");
 
     builder.Services.AddSingleton<IConnection>(_ =>
     {

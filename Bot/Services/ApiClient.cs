@@ -5,6 +5,7 @@ using System.Net.Http.Json;
 using System.Text.Json;
 using System.Text.Json.Serialization;
 using Bot.Interfaces;
+using Bot.Options;
 using Core.Exceptions;
 using Core.Models;
 using Core.Types;

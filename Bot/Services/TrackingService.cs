@@ -2,6 +2,7 @@ namespace Bot.Services;
 
 using System.Net;
 using Bot.Interfaces;
+using Bot.Options;
 using Core.Exceptions;
 using Data.Interfaces;
 using Microsoft.Extensions.Logging;
