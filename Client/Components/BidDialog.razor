@@ -6,14 +6,14 @@
 <MudDialog>
     <TitleContent>
         <MudText Typo="Typo.h6">
-            <MudIcon Icon="@(IsEditMode ? Icons.Material.Filled.Edit : Icons.Material.Filled.Gavel)" Class="mr-2" />
-            @(IsEditMode ? "Update Your Bid" : "Place a Bid")
+            <MudIcon Icon="@Icons.Material.Filled.Gavel" Class="mr-2" />
+            Place or Update Your Bid
         </MudText>
     </TitleContent>
     <DialogContent>
         <MudForm @ref="_form">
             <MudNumericField @bind-Value="_bidRate" 
-                             Label="Rate" 
+                             Label="Your Rate" 
                              HideSpinButtons="true"
                              Variant="Variant.Outlined" 
                              Adornment="Adornment.Start" 
@@ -44,7 +44,7 @@
             }
             else
             {
-                <MudText>@(IsEditMode ? "Save Changes" : "Confirm Bid")</MudText>
+                <MudText>Confirm Bid</MudText>
             }
         </MudButton>
     </DialogActions>
@@ -58,21 +58,23 @@
     public Guid AuctionLotId { get; set; }
     
     [Parameter] 
-    public BidDto? ExistingBid { get; set; }
+    public decimal? InitialRate { get; set; }
+    
+    [Parameter] 
+    public string? InitialNote { get; set; }
 
     private MudForm _form = null!;
-    private bool IsEditMode => ExistingBid is not null;
     private decimal _bidRate;
     private string? _note;
     private bool _processing;
 
     protected override void OnInitialized()
     {
-        if (IsEditMode && ExistingBid is not null)
+        if (InitialRate.HasValue)
         {
-            _bidRate = ExistingBid.Rate;
-            _note = ExistingBid.Note;
+            _bidRate = InitialRate.Value;
         }
+        _note = InitialNote;
     }
 
     private void Cancel() => MudDialog.Cancel();
@@ -89,7 +91,6 @@
     
         var dto = new BidCreateUpdateDto 
         { 
-            Id = ExistingBid?.Id,
             AuctionLotId = AuctionLotId, 
             Rate = _bidRate,
             Note = _note 
@@ -97,21 +98,10 @@
 
         try 
         {
-            if (IsEditMode)
-            {
-                var result = await BidService.UpdateAsync(dto);
-                Snackbar.Add("Bid updated successfully!", Severity.Success);
-                MudDialog.Close(DialogResult.Ok(true));
-            }
-            else
-            {
-                var id = await BidService.CreateAsync(dto);
-                if (id != null)
-                {
-                    Snackbar.Add("Bid placed successfully!", Severity.Success);
-                    MudDialog.Close(DialogResult.Ok(true));
-                }
-            }
+            var id = await BidService.PlaceAsync(dto); 
+            
+            Snackbar.Add("Bid submitted successfully!", Severity.Success);
+            MudDialog.Close(DialogResult.Ok(true));
         }
         catch (Exception ex)
         {

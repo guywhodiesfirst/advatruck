@@ -247,7 +247,6 @@
             _displayPhone = dto.PhoneNumber;
             _registrationDate = dto.RegistrationDate;
             
-            // Пріоритет імейлу з БД над імейлом з токена
             if (!string.IsNullOrEmpty(dto.Email))
             {
                 _userEmail = dto.Email;
@@ -261,7 +260,6 @@
         {
             _noteEditModel = new DriverCreateUpdateDto
             {
-                Id = _driverInfo.Id,
                 UserId = _userId,
                 Note = _driverInfo.Note
             };
@@ -276,7 +274,8 @@
         _isSubmitting = true;
         try
         {
-            await DriverService.UpdateAsync(_noteEditModel);
+            await DriverService.UpdateAsync(_driverInfo.Id, _noteEditModel);
+            
             _driverInfo.Note = _noteEditModel.Note;
             _isEditingNote = false;
             Snackbar.Add("Note saved", Severity.Success);

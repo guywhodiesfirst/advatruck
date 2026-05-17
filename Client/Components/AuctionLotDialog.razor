@@ -95,6 +95,7 @@
     private LoadDto? _currentLoad;
 
     private AuctionLotCreateUpdateDto _model = new();
+    private Guid _existingLotId;
     private DateTime? _endDate;
     private TimeSpan? _endTime;
 
@@ -102,7 +103,7 @@
     {
         if (IsEditMode && ExistingLot is not null)
         {
-            _model.Id = ExistingLot.Id;
+            _existingLotId = ExistingLot.Id;
             _model.LoadId = ExistingLot.LoadId;
             _model.DispatcherCreatedId = ExistingLot.DispatcherCreatedId;
             _model.Note = ExistingLot.Note;
@@ -146,7 +147,7 @@
         {
             if (IsEditMode)
             {
-                var updated = await AuctionService.UpdateAsync(_model);
+                var updated = await AuctionService.UpdateAsync(_existingLotId, _model);
                 MudDialog.Close(DialogResult.Ok(updated));
             }
             else

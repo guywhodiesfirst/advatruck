@@ -32,9 +32,9 @@ else
             <MudTh></MudTh>
             <MudTh>ID</MudTh>
             <MudTh>Status</MudTh>
+            <MudTh>Timeline</MudTh>
             <MudTh>Dispatcher</MudTh>
             <MudTh>Driver</MudTh>
-            <MudTh>Timeline</MudTh>
             <MudTh>Weight</MudTh>
             <MudTh>Rate</MudTh>
             <MudTh>Actions</MudTh>
@@ -112,7 +112,7 @@ else
             @if (context.ShowDetails)
             {
                 <MudTr>
-                    <td colspan="8">
+                    <td colspan="9">
                         <MudCard Elevation="0" Class="pa-4 mud-bg-gray">
                             <MudText Typo="Typo.subtitle2" Class="mb-2">Route Details</MudText>
                             <MudTimeline TimelinePosition="TimelinePosition.Start">
@@ -166,6 +166,27 @@ else
     public class LoadWrapper : LoadDto
     {
         public bool ShowDetails { get; set; }
+
+        public LoadWrapper() { }
+
+        public LoadWrapper(LoadDto baseDto)
+        {
+            Id = baseDto.Id;
+            CreatedAt = baseDto.CreatedAt;
+            ClosedAt = baseDto.ClosedAt;
+            LoadStatus = baseDto.LoadStatus;
+            DispatcherId = baseDto.DispatcherId;
+            DispatcherName = baseDto.DispatcherName;
+            DriverId = baseDto.DriverId;
+            DriverName = baseDto.DriverName;
+            Rate = baseDto.Rate;
+            CargoWeight = baseDto.CargoWeight;
+            CargoHeight = baseDto.CargoHeight;
+            CargoLength = baseDto.CargoLength;
+            CargoWidth = baseDto.CargoWidth;
+            Note = baseDto.Note;
+            LoadStops = baseDto.LoadStops;
+        }
     }
 
     protected override async Task OnInitializedAsync() => await RefreshAsync();
@@ -178,24 +199,8 @@ else
             var data = await LoadsService.GetAllAsync();
             _loads = data
                 .OrderByDescending(x => x.CreatedAt)
-                .Select(x => new LoadWrapper 
-                { 
-                    Id = x.Id, 
-                    CreatedAt = x.CreatedAt,
-                    ClosedAt = x.ClosedAt,
-                    LoadStatus = x.LoadStatus,
-                    DispatcherName = x.DispatcherName,
-                    DriverId = x.DriverId,
-                    DriverName = x.DriverName,
-                    Rate = x.Rate,
-                    CargoWeight = x.CargoWeight,
-                    LoadStops = x.LoadStops,
-                    Note = x.Note,
-                    CargoHeight = x.CargoHeight,
-                    CargoLength = x.CargoLength,
-                    CargoWidth = x.CargoWidth,
-                    DispatcherId = x.DispatcherId
-                }).ToList();
+                .Select(x => new LoadWrapper(x))
+                .ToList();
         }
         catch (Exception ex)
         {
@@ -251,8 +256,10 @@ else
     
     private async Task OpenAssignDriverDialog(Guid loadId)
     {
+        var parameters = new DialogParameters();
         var options = new DialogOptions { CloseButton = true, MaxWidth = MaxWidth.ExtraSmall, FullWidth = true };
-        var dialog = await DialogService.ShowAsync<AssignDriverDialog>("Assign Driver", options);
+        
+        var dialog = await DialogService.ShowAsync<AssignDriverDialog>("Assign Driver", parameters, options);
         var result = await dialog.Result;
 
         if (result != null && !result.Canceled)
@@ -263,11 +270,10 @@ else
             
                 var dto = new LoadAssignDriverDto 
                 { 
-                    LoadId = loadId, 
                     DriverId = driverId 
                 };
 
-                var success = await LoadsService.AssignDriverAsync(dto);
+                var success = await LoadsService.AssignDriverAsync(loadId, dto);
             
                 if (success != null)
                 {
@@ -311,9 +317,10 @@ else
         {
             var dto = new LoadStatusUpdateDto
             {
-                LoadId = id, LoadStatus = newStatus
+                LoadStatus = newStatus
             };
-            var loadDto = await LoadsService.UpdateStatusAsync(dto);
+
+            var loadDto = await LoadsService.UpdateStatusAsync(id, dto);
             if (loadDto != null)
             {
                 Snackbar.Add($"Status updated to {newStatus}", Severity.Success);

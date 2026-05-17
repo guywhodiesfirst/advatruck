@@ -17,7 +17,7 @@ public static class ApiRoutes
 
         public static string Create => $"api/{Version}/loads";
 
-        public static string Update => $"api/{Version}/loads";
+        public static string Update(Guid id) => $"api/{Version}/loads/{id}";
 
         public static string GetById(Guid id)
             => $"api/{Version}/loads/{id}";
@@ -25,11 +25,11 @@ public static class ApiRoutes
         public static string Delete(Guid id)
             => $"api/{Version}/loads/{id}";
 
-        public static string UpdateStatus
-            => $"api/{Version}/loads/status";
+        public static string UpdateStatus(Guid id)
+            => $"api/{Version}/loads/{id}/status";
 
-        public static string AssignDriver
-            => $"api/{Version}/loads/assign-driver";
+        public static string AssignDriver(Guid id)
+            => $"api/{Version}/loads/{id}/assign-driver";
 
         public static string DeassignDriver(Guid id)
             => $"api/{Version}/loads/{id}/deassign-driver";
@@ -43,7 +43,7 @@ public static class ApiRoutes
 
         public static string Create => $"api/{Version}/auctionLots";
 
-        public static string Update => $"api/{Version}/auctionLots";
+        public static string Update(Guid id) => $"api/{Version}/auctionLots/{id}";
 
         public static string GetById(Guid id)
             => $"api/{Version}/auctionLots/{id}";
@@ -59,9 +59,7 @@ public static class ApiRoutes
     {
         public static string GetAll => $"api/{Version}/bids";
 
-        public static string Create => $"api/{Version}/bids";
-
-        public static string Update => $"api/{Version}/bids";
+        public static string Place => $"api/{Version}/bids";
 
         public static string GetById(Guid id)
             => $"api/{Version}/bids/{id}";
@@ -78,7 +76,7 @@ public static class ApiRoutes
 
         public static string GetById(Guid id) => $"api/{Version}/drivers/{id}";
 
-        public static string Update => $"api/{Version}/drivers";
+        public static string Update(Guid id) => $"api/{Version}/drivers/{id}";
 
         public static string GetActiveLoad(Guid id) => $"api/{Version}/drivers/{id}/active-load";
 
@@ -106,11 +104,11 @@ public static class ApiRoutes
     {
         public static string GetAll => $"api/{Version}/vehicles";
 
-        public static string GetById(Guid id) => $"api/{Version}/vehicles/{id}";
-
         public static string Create => $"api/{Version}/vehicles";
 
-        public static string Update => $"api/{Version}/vehicles";
+        public static string GetById(Guid id) => $"api/{Version}/vehicles/{id}";
+
+        public static string Update(Guid id) => $"api/{Version}/vehicles/{id}";
 
         public static string Delete(Guid id) => $"api/{Version}/vehicles/{id}";
     }

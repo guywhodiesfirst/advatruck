@@ -63,10 +63,10 @@ public class DriversController(
     }
 
     [Authorize(Roles = "Admin, Driver")]
-    [HttpPut]
-    public async Task<ActionResult<DriverDto>> Update([FromBody] DriverCreateUpdateDto dto, CancellationToken cancellationToken)
+    [HttpPut("{id:guid}")]
+    public async Task<ActionResult<DriverDto>> Update(Guid id, [FromBody] DriverCreateUpdateDto dto, CancellationToken cancellationToken)
     {
-        var result = await driverService.UpdateAsync(dto, cancellationToken);
+        var result = await driverService.UpdateAsync(id, dto, cancellationToken);
         return Ok(result);
     }
 

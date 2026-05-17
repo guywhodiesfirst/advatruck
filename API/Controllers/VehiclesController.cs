@@ -35,10 +35,10 @@ public class VehiclesController(IVehicleService service) : ControllerBase
     }
 
     [Authorize(Roles = "Admin")]
-    [HttpPut]
-    public async Task<ActionResult<VehicleDto>> Update([FromBody] VehicleCreateUpdateDto dto, CancellationToken cancellationToken)
+    [HttpPut("{id:guid}")]
+    public async Task<ActionResult<VehicleDto>> Update(Guid id, [FromBody] VehicleCreateUpdateDto dto, CancellationToken cancellationToken)
     {
-        var result = await service.UpdateAsync(dto, cancellationToken);
+        var result = await service.UpdateAsync(id, dto, cancellationToken);
         return Ok(result);
     }
 

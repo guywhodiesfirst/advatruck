@@ -33,10 +33,11 @@ public interface IDriverService
     /// <summary>
     /// Update driver information.
     /// </summary>
+    /// <param name="id">Driver ID.</param>
     /// <param name="dto">Driver with updated data.</param>
     /// <param name="cancellationToken">Cancellation token.</param>
     /// <returns>Updated driver information.</returns>
-    Task<DriverDto> UpdateAsync(DriverCreateUpdateDto dto, CancellationToken cancellationToken = default);
+    Task<DriverDto> UpdateAsync(Guid id, DriverCreateUpdateDto dto, CancellationToken cancellationToken = default);
 
     /// <summary>
     /// Delete driver by ID.

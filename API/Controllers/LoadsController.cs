@@ -48,26 +48,26 @@ public class LoadsController(ILoadService service) : ControllerBase
     }
 
     [Authorize(Roles = "Dispatcher,Admin")]
-    [HttpPut]
-    public async Task<ActionResult<LoadDto>> Update([FromBody] LoadCreateUpdateDto dto, CancellationToken cancellationToken)
+    [HttpPut("{id:guid}")]
+    public async Task<ActionResult<LoadDto>> Update(Guid id, [FromBody] LoadCreateUpdateDto dto, CancellationToken cancellationToken)
     {
-        var result = await service.UpdateAsync(dto, cancellationToken);
+        var result = await service.UpdateAsync(id, dto, cancellationToken);
         return Ok(result);
     }
 
     [Authorize(Roles = "Dispatcher,Admin")]
-    [HttpPatch("status")]
-    public async Task<ActionResult<LoadDto>> UpdateStatus([FromBody] LoadStatusUpdateDto dto, CancellationToken cancellationToken)
+    [HttpPatch("{id:guid}/status")]
+    public async Task<ActionResult<LoadDto>> UpdateStatus(Guid id, [FromBody] LoadStatusUpdateDto dto, CancellationToken cancellationToken)
     {
-        var result = await service.UpdateStatusAsync(dto, cancellationToken);
+        var result = await service.UpdateStatusAsync(id, dto, cancellationToken);
         return Ok(result);
     }
 
     [Authorize(Roles = "Dispatcher")]
-    [HttpPatch("assign-driver")]
-    public async Task<ActionResult<LoadDto>> AssignDriver([FromBody] LoadAssignDriverDto dto, CancellationToken cancellationToken)
+    [HttpPatch("{id:guid}/assign-driver")]
+    public async Task<ActionResult<LoadDto>> AssignDriver(Guid id, [FromBody] LoadAssignDriverDto dto, CancellationToken cancellationToken)
     {
-        var result = await service.AssignDriverAsync(dto, cancellationToken);
+        var result = await service.AssignDriverAsync(id, dto, cancellationToken);
         return Ok(result);
     }
 

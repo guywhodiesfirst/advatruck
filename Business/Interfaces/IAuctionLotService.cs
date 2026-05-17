@@ -33,7 +33,7 @@ public interface IAuctionLotService
     /// <summary>
     /// Create a new auction lot.
     /// </summary>
-    /// <param name="dto">AuctionLot to create.</param>
+    /// <param name="dto">Auction lot to create.</param>
     /// <param name="cancellationToken">Cancellation token.</param>
     /// <returns>ID of created auction lot.</returns>
     Task<Guid> CreateAsync(AuctionLotCreateUpdateDto dto, CancellationToken cancellationToken = default);
@@ -41,15 +41,16 @@ public interface IAuctionLotService
     /// <summary>
     /// Update auction lot information.
     /// </summary>
-    /// <param name="dto">AuctionLot with updated data.</param>
+    /// <param name="id">Auction lot ID.</param>
+    /// <param name="dto">Auction lot with updated data.</param>
     /// <param name="cancellationToken">Cancellation token.</param>
     /// <returns>Updated auction lot.</returns>
-    Task<AuctionLotDto> UpdateAsync(AuctionLotCreateUpdateDto dto, CancellationToken cancellationToken = default);
+    Task<AuctionLotDto> UpdateAsync(Guid id, AuctionLotCreateUpdateDto dto, CancellationToken cancellationToken = default);
 
     /// <summary>
     /// Delete auction lot by ID.
     /// </summary>
-    /// <param name="id">AuctionLot's ID.</param>
+    /// <param name="id">Auction lot's ID.</param>
     /// <param name="cancellationToken">Cancellation token.</param>
     /// <returns>Task representing async operation.</returns>
     Task DeleteAsync(Guid id, CancellationToken cancellationToken = default);
@@ -57,7 +58,7 @@ public interface IAuctionLotService
     /// <summary>
     /// Updates only the status of the auction lot.
     /// </summary>
-    /// <param name="id">AuctionID.</param>
+    /// <param name="id">Auction lot ID.</param>
     /// <param name="status">New auction status.</param>
     /// <param name="cancellationToken">Cancellation token.</param>
     /// <returns>Task representing async operation.</returns>

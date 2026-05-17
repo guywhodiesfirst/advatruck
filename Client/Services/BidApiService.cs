@@ -10,15 +10,14 @@ public class BidApiService(HttpClient httpClient)
         await httpClient.GetFromJsonAsync<List<BidDto>>(ApiRoutes.Bids.GetAll) ??
             [];
 
-    public async Task<Guid?> CreateAsync(BidCreateUpdateDto dto)
+    public async Task<Guid?> PlaceAsync(BidCreateUpdateDto dto)
     {
-        var response = await httpClient.PostAsJsonAsync(ApiRoutes.Bids.Create, dto);
-        return response.IsSuccessStatusCode ? await response.Content.ReadFromJsonAsync<Guid>() : null;
-    }
+        var response = await httpClient.PostAsJsonAsync(ApiRoutes.Bids.Place, dto);
+        if (response.IsSuccessStatusCode)
+        {
+            return await response.Content.ReadFromJsonAsync<Guid>();
+        }
 
-    public async Task<bool> UpdateAsync(BidCreateUpdateDto dto)
-    {
-        var response = await httpClient.PutAsJsonAsync(ApiRoutes.Bids.Update, dto);
-        return response.IsSuccessStatusCode;
+        return null;
     }
 }

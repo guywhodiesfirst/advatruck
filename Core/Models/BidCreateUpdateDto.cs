@@ -2,8 +2,6 @@ namespace Core.Models;
 
 public class BidCreateUpdateDto
 {
-    public Guid? Id { get; set; }
-
     public Guid AuctionLotId { get; set; }
 
     public Guid DriverCreatedId { get; set; }

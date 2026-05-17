@@ -77,7 +77,6 @@
                             
                             <MudTextField @bind-Value="stop.Address" Label="Address" Required="true" Class="mb-2" />
                             
-                            @* ОСЬ ЦЕ ПОЛЕ ТРЕБА БУЛО ДОДАТИ *@
                             <MudTextField @bind-Value="stop.Note" Label="Stop Note (Gate code, contact person, etc.)" Class="mb-2" />
                             
                             <div class="d-flex ga-4">
@@ -117,7 +116,6 @@
     {
         if (IsEditMode && ExistingLoad is not null)
         {
-            _model.Id = ExistingLoad.Id;
             _model.Note = ExistingLoad.Note;
             _model.Rate = ExistingLoad.Rate;
             _model.CargoWeight = ExistingLoad.CargoWeight;
@@ -191,31 +189,50 @@
             }
         }
 
+        var stops = _model.LoadStops.OrderBy(s => s.Timestamp).ToList();
+
+        if (stops.First().LoadLocationType != LoadLocationType.Pickup)
+        {
+            Snackbar.Add("First stop (earliest time) must be a Pickup", Severity.Error);
+            return;
+        }
+
+        if (stops.Last().LoadLocationType != LoadLocationType.Delivery)
+        {
+            Snackbar.Add("Last stop (latest time) must be a Delivery", Severity.Error);
+            return;
+        }
+
+        for (int i = 1; i < stops.Count; i++)
+        {
+            if (stops[i].Timestamp <= stops[i - 1].Timestamp)
+            {
+                Snackbar.Add($"Stop #{i + 1} must be scheduled after stop #{i}", Severity.Error);
+                return;
+            }
+        }
+
+        _model.LoadStops = stops;
+
         _submitting = true;
         try
         {
-            if (IsEditMode)
+            if (IsEditMode && ExistingLoad is not null)
             {
-                var result = await LoadsService.UpdateAsync(_model);
-                if (result != null)
-                {
-                    Snackbar.Add("Load updated", Severity.Success);
-                    MudDialog.Close(DialogResult.Ok(result.Id));
-                }
+                await LoadsService.UpdateAsync(ExistingLoad.Id, _model);
+                Snackbar.Add("Load updated successfully", Severity.Success);
+                MudDialog.Close(DialogResult.Ok(true));
             }
             else
             {
-                var id = await LoadsService.CreateAsync(_model);
-                if (id != null)
-                {
-                    Snackbar.Add("Load created", Severity.Success);
-                    MudDialog.Close(DialogResult.Ok(id));
-                }
+                await LoadsService.CreateAsync(_model);
+                Snackbar.Add("Load created successfully", Severity.Success);
+                MudDialog.Close(DialogResult.Ok(true));
             }
         }
         catch (Exception ex)
         {
-            Snackbar.Add($"Error: {ex.Message}", Severity.Error);
+            Snackbar.Add($"Operation failed: {ex.Message}", Severity.Error);
         }
         finally
         {

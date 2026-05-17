@@ -6,8 +6,8 @@
 <MudDialog>
     <TitleContent>
         <MudText Typo="Typo.h6">
-            <MudIcon Icon="@(Vehicle.Id == null ? Icons.Material.Filled.Add : Icons.Material.Filled.Edit)" Class="mr-3 mb-n1" />
-            @(Vehicle.Id == null ? "Assign New Vehicle" : "Edit Vehicle")
+            <MudIcon Icon="@(VehicleId == null ? Icons.Material.Filled.Add : Icons.Material.Filled.Edit)" Class="mr-3 mb-n1" />
+            @(VehicleId == null ? "Assign New Vehicle" : "Edit Vehicle")
         </MudText>
     </TitleContent>
     <DialogContent>
@@ -64,7 +64,7 @@
             {
                 <MudProgressCircular Size="Size.Small" Indeterminate="true" Class="mr-2"/>
             }
-            @(Vehicle.Id == null ? "Create & Assign" : "Save Changes")
+            @(VehicleId == null ? "Create & Assign" : "Save Changes")
         </MudButton>
     </DialogActions>
 </MudDialog>
@@ -72,6 +72,9 @@
 @code {
     [CascadingParameter] 
     private IMudDialogInstance MudDialog { get; set; } = null!;
+
+    [Parameter] 
+    public Guid? VehicleId { get; set; }
 
     [Parameter] 
     public VehicleCreateUpdateDto Vehicle { get; set; } = null!;
@@ -87,13 +90,13 @@
         _processing = true;
         try
         {
-            if (Vehicle.Id == null)
+            if (VehicleId == null)
             {
                 await VehicleService.CreateAsync(Vehicle);
             }
             else
             {
-                await VehicleService.UpdateAsync(Vehicle);
+                await VehicleService.UpdateAsync(VehicleId.Value, Vehicle);
             }
             
             MudDialog.Close(DialogResult.Ok(true));

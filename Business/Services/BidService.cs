@@ -36,64 +36,6 @@ public class BidService(
     }
 
     /// <inheritdoc/>
-    public async Task<Guid> CreateAsync(BidCreateUpdateDto dto, CancellationToken cancellationToken = default)
-    {
-        var auctionInDb = await auctionLots.GetByIdAsync(dto.AuctionLotId, cancellationToken);
-        if (auctionInDb == null)
-        {
-            throw new TmsException("Auction Lot not found", HttpStatusCode.NotFound);
-        }
-
-        if (auctionInDb.Status == AuctionStatus.Finished || auctionInDb.EndsAt < DateTime.UtcNow)
-        {
-            throw new TmsException("Cannot create bid: auction not active", HttpStatusCode.BadRequest);
-        }
-
-        try
-        {
-            var entity = mapper.Map<Bid>(dto);
-            await repository.AddAsync(entity, cancellationToken);
-            return entity.Id;
-        }
-        catch (Exception)
-        {
-            throw new TmsException("Failed to create bid. Ensure data is valid.", HttpStatusCode.BadRequest);
-        }
-    }
-
-    /// <inheritdoc/>
-    public async Task<BidDto> UpdateAsync(Guid currentUserId, BidCreateUpdateDto dto, CancellationToken cancellationToken = default)
-    {
-        if (!dto.Id.HasValue || dto.Id.Value == Guid.Empty)
-        {
-            throw new TmsException("Bid ID is required for update", HttpStatusCode.BadRequest);
-        }
-
-        var existingEntity = await repository.GetByIdAsync(dto.Id.Value, cancellationToken);
-
-        if (existingEntity == null)
-        {
-            throw new TmsException("Cannot update: bid not found", HttpStatusCode.NotFound);
-        }
-
-        if (existingEntity.DriverCreatedId != currentUserId)
-        {
-            throw new TmsException("Forbidden: You can only edit your own bids", HttpStatusCode.Forbidden);
-        }
-
-        if (existingEntity.AuctionLot.Status == AuctionStatus.Finished ||
-            existingEntity.AuctionLot.EndsAt < DateTime.UtcNow)
-        {
-            throw new TmsException("Cannot update: auction not active", HttpStatusCode.BadRequest);
-        }
-
-        mapper.Map(dto, existingEntity);
-        await repository.UpdateAsync(existingEntity, cancellationToken);
-
-        return mapper.Map<BidDto>(existingEntity);
-    }
-
-    /// <inheritdoc/>
     public async Task DeleteAsync(Guid id, CancellationToken cancellationToken = default)
     {
         var entity = await repository.GetByIdAsync(id, cancellationToken);
@@ -104,5 +46,46 @@ public class BidService(
         }
 
         await repository.DeleteAsync(entity, cancellationToken);
+    }
+
+    /// <inheritdoc/>
+    public async Task<Guid> UpsertAsync(Guid driverId, BidCreateUpdateDto dto, CancellationToken cancellationToken = default)
+    {
+        var auctionInDb = await auctionLots.GetByIdAsync(dto.AuctionLotId, cancellationToken);
+        if (auctionInDb == null)
+        {
+            throw new TmsException("Auction Lot not found", HttpStatusCode.NotFound);
+        }
+
+        if (auctionInDb.Status == AuctionStatus.Finished || auctionInDb.EndsAt < DateTime.UtcNow)
+        {
+            throw new TmsException("Cannot place bid: auction is not active", HttpStatusCode.BadRequest);
+        }
+
+        var existingBid = await repository.GetByDriverAndLotAsync(driverId, dto.AuctionLotId, cancellationToken);
+
+        if (existingBid != null)
+        {
+            existingBid.Note = dto.Note;
+            existingBid.Rate = dto.Rate;
+            existingBid.CreatedAt = DateTime.UtcNow;
+
+            await repository.UpdateAsync(existingBid, cancellationToken);
+            return existingBid.Id;
+        }
+
+        try
+        {
+            var newBid = mapper.Map<Bid>(dto);
+            newBid.DriverCreatedId = driverId;
+            newBid.CreatedAt = DateTime.UtcNow;
+
+            await repository.AddAsync(newBid, cancellationToken);
+            return newBid.Id;
+        }
+        catch (Exception)
+        {
+            throw new TmsException("Failed to create bid. Ensure data is valid.", HttpStatusCode.BadRequest);
+        }
     }
 }

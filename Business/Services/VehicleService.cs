@@ -43,15 +43,15 @@ public class VehicleService(IVehicleRepository repository, IMapper mapper) : IVe
     }
 
     /// <inheritdoc />
-    public async Task<VehicleDto> UpdateAsync(VehicleCreateUpdateDto dto, CancellationToken cancellationToken = default)
+    public async Task<VehicleDto> UpdateAsync(Guid id, VehicleCreateUpdateDto dto, CancellationToken cancellationToken = default)
     {
-        if (!dto.Id.HasValue)
+        if (id == Guid.Empty)
         {
             throw new TmsException("Vehicle ID is required for update", HttpStatusCode.BadRequest);
         }
 
-        var existingVehicle = await repository.GetByIdAsync(dto.Id.Value, cancellationToken)
-            ?? throw new TmsException($"Vehicle with ID {dto.Id} not found", HttpStatusCode.NotFound);
+        var existingVehicle = await repository.GetByIdAsync(id, cancellationToken)
+            ?? throw new TmsException($"Vehicle with ID {id} not found", HttpStatusCode.NotFound);
 
         mapper.Map(dto, existingVehicle);
 

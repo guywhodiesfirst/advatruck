@@ -49,14 +49,14 @@ public class DriverService(
     }
 
     /// <inheritdoc/>
-    public async Task<DriverDto> UpdateAsync(DriverCreateUpdateDto dto, CancellationToken cancellationToken = default)
+    public async Task<DriverDto> UpdateAsync(Guid id, DriverCreateUpdateDto dto, CancellationToken cancellationToken = default)
     {
-        if (!dto.Id.HasValue)
+        if (id == Guid.Empty)
         {
             throw new TmsException("Driver ID is required for update", HttpStatusCode.BadRequest);
         }
 
-        var existingDriver = await driverRepository.GetByIdAsync(dto.Id.Value, cancellationToken);
+        var existingDriver = await driverRepository.GetByIdAsync(id, cancellationToken);
         if (existingDriver == null)
         {
             throw new TmsException("Cannot update: driver not found", HttpStatusCode.NotFound);
