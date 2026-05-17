@@ -33,10 +33,11 @@ public interface ILoadService
     /// <summary>
     /// Update load information.
     /// </summary>
+    /// <param name="id">Load ID.</param>
     /// <param name="dto">Load with updated data.</param>
     /// <param name="cancellationToken">Cancellation token.</param>
     /// <returns>Updated load.</returns>
-    Task<LoadDto> UpdateAsync(LoadCreateUpdateDto dto, CancellationToken cancellationToken = default);
+    Task<LoadDto> UpdateAsync(Guid id, LoadCreateUpdateDto dto, CancellationToken cancellationToken = default);
 
     /// <summary>
     /// Delete load by ID.
@@ -49,18 +50,20 @@ public interface ILoadService
     /// <summary>
     /// Update only the status of the load.
     /// </summary>
+    /// <param name="id">Load ID.</param>
     /// <param name="dto">Status update data.</param>
     /// <param name="cancellationToken">Cancellation token.</param>
     /// <returns>Updated load data.</returns>
-    Task<LoadDto> UpdateStatusAsync(LoadStatusUpdateDto dto, CancellationToken cancellationToken = default);
+    Task<LoadDto> UpdateStatusAsync(Guid id, LoadStatusUpdateDto dto, CancellationToken cancellationToken = default);
 
     /// <summary>
     /// Assign driver to the load.
     /// </summary>
+    /// <param name="id">Load ID.</param>
     /// <param name="dto">DTO.</param>
     /// <param name="cancellationToken">Cancellation token.</param>
     /// <returns>Updated load data.</returns>
-    Task<LoadDto> AssignDriverAsync(LoadAssignDriverDto dto, CancellationToken cancellationToken = default);
+    Task<LoadDto> AssignDriverAsync(Guid id, LoadAssignDriverDto dto, CancellationToken cancellationToken = default);
 
     /// <summary>
     /// Remove driver from the load.

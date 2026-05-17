@@ -77,7 +77,6 @@
                             
                             <MudTextField @bind-Value="stop.Address" Label="Address" Required="true" Class="mb-2" />
                             
-                            @* ОСЬ ЦЕ ПОЛЕ ТРЕБА БУЛО ДОДАТИ *@
                             <MudTextField @bind-Value="stop.Note" Label="Stop Note (Gate code, contact person, etc.)" Class="mb-2" />
                             
                             <div class="d-flex ga-4">
@@ -117,7 +116,7 @@
     {
         if (IsEditMode && ExistingLoad is not null)
         {
-            _model.Id = ExistingLoad.Id;
+            // ВИПРАВЛЕНО: Рядок _model.Id = ExistingLoad.Id видалено, бо в DTO немає Id
             _model.Note = ExistingLoad.Note;
             _model.Rate = ExistingLoad.Rate;
             _model.CargoWeight = ExistingLoad.CargoWeight;
@@ -194,9 +193,10 @@
         _submitting = true;
         try
         {
-            if (IsEditMode)
+            if (IsEditMode && ExistingLoad is not null)
             {
-                var result = await LoadsService.UpdateAsync(_model);
+                // ВИПРАВЛЕНО: беремо Id напряму з ExistingLoad.Id, оскільки в моделі його немає
+                var result = await LoadsService.UpdateAsync(ExistingLoad.Id, _model);
                 if (result != null)
                 {
                     Snackbar.Add("Load updated", Severity.Success);

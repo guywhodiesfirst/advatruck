@@ -5,8 +5,6 @@ using Core.Enums;
 
 public class LoadCreateUpdateDto
 {
-    public Guid? Id { get; set; }
-
     public LoadStatus LoadStatus { get; set; }
 
     public string? Note { get; set; }

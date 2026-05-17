@@ -69,9 +69,9 @@ public class LoadService(
     }
 
     /// <inheritdoc />
-    public async Task<LoadDto> UpdateAsync(LoadCreateUpdateDto dto, CancellationToken cancellationToken = default)
+    public async Task<LoadDto> UpdateAsync(Guid id, LoadCreateUpdateDto dto, CancellationToken cancellationToken = default)
     {
-        var existingLoad = await loadRepository.GetByIdAsync(dto.Id!.Value, cancellationToken);
+        var existingLoad = await loadRepository.GetByIdAsync(id, cancellationToken);
         if (existingLoad == null)
         {
             throw new TmsException("Load not found", HttpStatusCode.NotFound);
@@ -104,9 +104,9 @@ public class LoadService(
     }
 
     /// <inheritdoc />
-    public async Task<LoadDto> UpdateStatusAsync(LoadStatusUpdateDto dto, CancellationToken cancellationToken = default)
+    public async Task<LoadDto> UpdateStatusAsync(Guid id, LoadStatusUpdateDto dto, CancellationToken cancellationToken = default)
     {
-        var existingLoad = await loadRepository.GetByIdAsync(dto.LoadId, cancellationToken);
+        var existingLoad = await loadRepository.GetByIdAsync(id, cancellationToken);
         if (existingLoad == null)
         {
             throw new TmsException("Load not found", HttpStatusCode.NotFound);
@@ -126,9 +126,9 @@ public class LoadService(
     }
 
     /// <inheritdoc/>
-    public async Task<LoadDto> AssignDriverAsync(LoadAssignDriverDto dto, CancellationToken cancellationToken = default)
+    public async Task<LoadDto> AssignDriverAsync(Guid id, LoadAssignDriverDto dto, CancellationToken cancellationToken = default)
     {
-        var existingLoad = await loadRepository.GetByIdAsync(dto.LoadId, cancellationToken);
+        var existingLoad = await loadRepository.GetByIdAsync(id, cancellationToken);
         if (existingLoad == null)
         {
             throw new TmsException("Load not found", HttpStatusCode.NotFound);
