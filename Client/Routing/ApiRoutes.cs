@@ -61,7 +61,7 @@ public static class ApiRoutes
 
         public static string Create => $"api/{Version}/bids";
 
-        public static string Update => $"api/{Version}/bids";
+        public static string Update(Guid id) => $"api/{Version}/bids/{id}";
 
         public static string GetById(Guid id)
             => $"api/{Version}/bids/{id}";

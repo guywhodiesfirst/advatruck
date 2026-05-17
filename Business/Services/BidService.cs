@@ -62,14 +62,9 @@ public class BidService(
     }
 
     /// <inheritdoc/>
-    public async Task<BidDto> UpdateAsync(Guid currentUserId, BidCreateUpdateDto dto, CancellationToken cancellationToken = default)
+    public async Task<BidDto> UpdateAsync(Guid id, Guid currentUserId, BidCreateUpdateDto dto, CancellationToken cancellationToken = default)
     {
-        if (!dto.Id.HasValue || dto.Id.Value == Guid.Empty)
-        {
-            throw new TmsException("Bid ID is required for update", HttpStatusCode.BadRequest);
-        }
-
-        var existingEntity = await repository.GetByIdAsync(dto.Id.Value, cancellationToken);
+        var existingEntity = await repository.GetByIdAsync(id, cancellationToken);
 
         if (existingEntity == null)
         {

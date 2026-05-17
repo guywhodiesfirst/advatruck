@@ -44,8 +44,8 @@ public class BidsController(IBidService service) : ControllerBase
     }
 
     [Authorize(Roles = "Driver")]
-    [HttpPut]
-    public async Task<ActionResult<BidDto>> Update([FromBody] BidCreateUpdateDto dto)
+    [HttpPut("{id:guid}")]
+    public async Task<ActionResult<BidDto>> Update(Guid id, [FromBody] BidCreateUpdateDto dto, CancellationToken cancellationToken)
     {
         var currentDriverId = User.GetDriverId();
 
@@ -54,7 +54,7 @@ public class BidsController(IBidService service) : ControllerBase
             return Unauthorized();
         }
 
-        var result = await service.UpdateAsync(currentDriverId, dto);
+        var result = await service.UpdateAsync(id, currentDriverId, dto, cancellationToken);
         return Ok(result);
     }
 

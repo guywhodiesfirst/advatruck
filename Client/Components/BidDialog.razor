@@ -65,11 +65,13 @@
     private decimal _bidRate;
     private string? _note;
     private bool _processing;
+    private Guid _existingBidId;
 
     protected override void OnInitialized()
     {
         if (IsEditMode && ExistingBid is not null)
         {
+            _existingBidId = ExistingBid.Id;
             _bidRate = ExistingBid.Rate;
             _note = ExistingBid.Note;
         }
@@ -89,7 +91,6 @@
     
         var dto = new BidCreateUpdateDto 
         { 
-            Id = ExistingBid?.Id,
             AuctionLotId = AuctionLotId, 
             Rate = _bidRate,
             Note = _note 
@@ -99,7 +100,7 @@
         {
             if (IsEditMode)
             {
-                var result = await BidService.UpdateAsync(dto);
+                var result = await BidService.UpdateAsync(_existingBidId, dto);
                 Snackbar.Add("Bid updated successfully!", Severity.Success);
                 MudDialog.Close(DialogResult.Ok(true));
             }

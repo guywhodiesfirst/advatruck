@@ -33,6 +33,7 @@ public interface IBidService
     /// <summary>
     /// Update bid information.
     /// </summary>
+    /// <param name="bidId">Bid ID.</param>
     /// <param name="currentUserId">
     /// ID of the driver who updates the bid.
     /// Prevents driver from updating bids other than theirs.
@@ -40,7 +41,7 @@ public interface IBidService
     /// <param name="dto">Bid with updated data.</param>
     /// <param name="cancellationToken">Cancellation token.</param>
     /// <returns>Updated bid.</returns>
-    Task<BidDto> UpdateAsync(Guid currentUserId, BidCreateUpdateDto dto, CancellationToken cancellationToken = default);
+    Task<BidDto> UpdateAsync(Guid bidId, Guid currentUserId, BidCreateUpdateDto dto, CancellationToken cancellationToken = default);
 
     /// <summary>
     /// Delete bid by ID.
