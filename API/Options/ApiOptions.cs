@@ -1,6 +1,6 @@
-namespace Core.Options;
+namespace API.Options;
 
-public class AppOptions
+public class ApiOptions
 {
     public const string ConfigName = "App";
 

@@ -25,6 +25,11 @@ try
 
     var app = builder.Build();
 
+    if (app.Environment.IsDevelopment())
+    {
+        await app.MigrateAndSeedDatabaseAsync();
+    }
+
     app.UseMiddleware<ExceptionHandlingMiddleware>();
     app.UseCors("ClientPolicy");
 
@@ -32,8 +37,6 @@ try
     {
         app.MapOpenApi();
         app.MapScalarApiReference();
-
-        await app.MigrateAndSeedDatabaseAsync();
     }
 
     app.UseHttpsRedirection();

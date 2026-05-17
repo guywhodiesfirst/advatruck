@@ -7,38 +7,11 @@ using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 namespace Data.Migrations
 {
     /// <inheritdoc />
-    public partial class AddAuth : Migration
+    public partial class Initial : Migration
     {
         /// <inheritdoc />
         protected override void Up(MigrationBuilder migrationBuilder)
         {
-            migrationBuilder.DropColumn(
-                name: "Email",
-                table: "Drivers");
-
-            migrationBuilder.DropColumn(
-                name: "FirstName",
-                table: "Drivers");
-
-            migrationBuilder.DropColumn(
-                name: "LastName",
-                table: "Drivers");
-
-            migrationBuilder.DropColumn(
-                name: "Phone",
-                table: "Drivers");
-
-            migrationBuilder.DropColumn(
-                name: "RegistrationDate",
-                table: "Drivers");
-
-            migrationBuilder.AddColumn<Guid>(
-                name: "UserId",
-                table: "Drivers",
-                type: "uuid",
-                nullable: false,
-                defaultValue: new Guid("00000000-0000-0000-0000-000000000000"));
-
             migrationBuilder.CreateTable(
                 name: "AspNetRoles",
                 columns: table => new
@@ -98,6 +71,24 @@ namespace Data.Migrations
                         name: "FK_AspNetRoleClaims_AspNetRoles_RoleId",
                         column: x => x.RoleId,
                         principalTable: "AspNetRoles",
+                        principalColumn: "Id",
+                        onDelete: ReferentialAction.Cascade);
+                });
+
+            migrationBuilder.CreateTable(
+                name: "Admins",
+                columns: table => new
+                {
+                    Id = table.Column<Guid>(type: "uuid", nullable: false),
+                    UserId = table.Column<Guid>(type: "uuid", nullable: false)
+                },
+                constraints: table =>
+                {
+                    table.PrimaryKey("PK_Admins", x => x.Id);
+                    table.ForeignKey(
+                        name: "FK_Admins_AspNetUsers_UserId",
+                        column: x => x.UserId,
+                        principalTable: "AspNetUsers",
                         principalColumn: "Id",
                         onDelete: ReferentialAction.Cascade);
                 });
@@ -206,15 +197,57 @@ namespace Data.Migrations
                 });
 
             migrationBuilder.CreateTable(
+                name: "Drivers",
+                columns: table => new
+                {
+                    Id = table.Column<Guid>(type: "uuid", nullable: false),
+                    UserId = table.Column<Guid>(type: "uuid", nullable: false),
+                    Note = table.Column<string>(type: "character varying(500)", maxLength: 500, nullable: true)
+                },
+                constraints: table =>
+                {
+                    table.PrimaryKey("PK_Drivers", x => x.Id);
+                    table.ForeignKey(
+                        name: "FK_Drivers_AspNetUsers_UserId",
+                        column: x => x.UserId,
+                        principalTable: "AspNetUsers",
+                        principalColumn: "Id",
+                        onDelete: ReferentialAction.Cascade);
+                });
+
+            migrationBuilder.CreateTable(
+                name: "DriverLocations",
+                columns: table => new
+                {
+                    UpdateTime = table.Column<DateTime>(type: "timestamp with time zone", nullable: false),
+                    DriverId = table.Column<Guid>(type: "uuid", nullable: false),
+                    Location_Latitude = table.Column<double>(type: "double precision", nullable: false),
+                    Location_Longitude = table.Column<double>(type: "double precision", nullable: false),
+                    Address = table.Column<string>(type: "text", nullable: false)
+                },
+                constraints: table =>
+                {
+                    table.PrimaryKey("PK_DriverLocations", x => new { x.DriverId, x.UpdateTime });
+                    table.ForeignKey(
+                        name: "FK_DriverLocations_Drivers_DriverId",
+                        column: x => x.DriverId,
+                        principalTable: "Drivers",
+                        principalColumn: "Id",
+                        onDelete: ReferentialAction.Cascade);
+                });
+
+            migrationBuilder.CreateTable(
                 name: "Loads",
                 columns: table => new
                 {
                     Id = table.Column<Guid>(type: "uuid", nullable: false),
                     CreatedAt = table.Column<DateTime>(type: "timestamp with time zone", nullable: false),
+                    LoadStatus = table.Column<int>(type: "integer", nullable: false),
                     ClosedAt = table.Column<DateTime>(type: "timestamp with time zone", nullable: true),
                     Rate = table.Column<decimal>(type: "numeric", nullable: false),
-                    DriverCharge = table.Column<decimal>(type: "numeric", nullable: false),
-                    DriverId = table.Column<Guid>(type: "uuid", nullable: false),
+                    DriverCharge = table.Column<decimal>(type: "numeric", nullable: true),
+                    Note = table.Column<string>(type: "character varying(500)", maxLength: 500, nullable: true),
+                    DriverId = table.Column<Guid>(type: "uuid", nullable: true),
                     DispatcherId = table.Column<Guid>(type: "uuid", nullable: false),
                     CargoWeight = table.Column<double>(type: "double precision", nullable: false),
                     CargoWidth = table.Column<int>(type: "integer", nullable: false),
@@ -229,39 +262,124 @@ namespace Data.Migrations
                         column: x => x.DispatcherId,
                         principalTable: "Dispatchers",
                         principalColumn: "Id",
-                        onDelete: ReferentialAction.Cascade);
+                        onDelete: ReferentialAction.Restrict);
                     table.ForeignKey(
                         name: "FK_Loads_Drivers_DriverId",
                         column: x => x.DriverId,
                         principalTable: "Drivers",
                         principalColumn: "Id",
+                        onDelete: ReferentialAction.Restrict);
+                });
+
+            migrationBuilder.CreateTable(
+                name: "Vehicles",
+                columns: table => new
+                {
+                    Id = table.Column<Guid>(type: "uuid", nullable: false),
+                    Model = table.Column<string>(type: "character varying(255)", maxLength: 255, nullable: false),
+                    PlateNumber = table.Column<string>(type: "character varying(9)", maxLength: 9, nullable: false),
+                    CargoSpaceWidth = table.Column<int>(type: "integer", nullable: false),
+                    CargoSpaceLength = table.Column<int>(type: "integer", nullable: false),
+                    CargoSpaceHeight = table.Column<int>(type: "integer", nullable: false),
+                    MaxWeight = table.Column<int>(type: "integer", nullable: false),
+                    DriverId = table.Column<Guid>(type: "uuid", nullable: false)
+                },
+                constraints: table =>
+                {
+                    table.PrimaryKey("PK_Vehicles", x => x.Id);
+                    table.ForeignKey(
+                        name: "FK_Vehicles_Drivers_DriverId",
+                        column: x => x.DriverId,
+                        principalTable: "Drivers",
+                        principalColumn: "Id",
+                        onDelete: ReferentialAction.SetNull);
+                });
+
+            migrationBuilder.CreateTable(
+                name: "AuctionLots",
+                columns: table => new
+                {
+                    Id = table.Column<Guid>(type: "uuid", nullable: false),
+                    LoadId = table.Column<Guid>(type: "uuid", nullable: false),
+                    DispatcherCreatedId = table.Column<Guid>(type: "uuid", nullable: false),
+                    StartsAt = table.Column<DateTime>(type: "timestamp with time zone", nullable: false),
+                    EndsAt = table.Column<DateTime>(type: "timestamp with time zone", nullable: false),
+                    Status = table.Column<int>(type: "integer", nullable: false),
+                    Note = table.Column<string>(type: "character varying(500)", maxLength: 500, nullable: true)
+                },
+                constraints: table =>
+                {
+                    table.PrimaryKey("PK_AuctionLots", x => x.Id);
+                    table.ForeignKey(
+                        name: "FK_AuctionLots_Dispatchers_DispatcherCreatedId",
+                        column: x => x.DispatcherCreatedId,
+                        principalTable: "Dispatchers",
+                        principalColumn: "Id",
+                        onDelete: ReferentialAction.Cascade);
+                    table.ForeignKey(
+                        name: "FK_AuctionLots_Loads_LoadId",
+                        column: x => x.LoadId,
+                        principalTable: "Loads",
+                        principalColumn: "Id",
                         onDelete: ReferentialAction.Cascade);
                 });
 
             migrationBuilder.CreateTable(
-                name: "LoadLocations",
+                name: "LoadStops",
                 columns: table => new
                 {
-                    Id = table.Column<Guid>(type: "uuid", nullable: false),
+                    LoadId = table.Column<Guid>(type: "uuid", nullable: false),
+                    Id = table.Column<int>(type: "integer", nullable: false)
+                        .Annotation("Npgsql:ValueGenerationStrategy", NpgsqlValueGenerationStrategy.IdentityByDefaultColumn),
                     LoadLocationType = table.Column<int>(type: "integer", nullable: false),
                     Timestamp = table.Column<DateTime>(type: "timestamp with time zone", nullable: false),
+                    Address = table.Column<string>(type: "text", nullable: false),
+                    Note = table.Column<string>(type: "text", nullable: true),
                     Location_Latitude = table.Column<double>(type: "double precision", nullable: false),
-                    Location_Longitude = table.Column<double>(type: "double precision", nullable: false),
-                    LoadId = table.Column<Guid>(type: "uuid", nullable: true)
+                    Location_Longitude = table.Column<double>(type: "double precision", nullable: false)
                 },
                 constraints: table =>
                 {
-                    table.PrimaryKey("PK_LoadLocations", x => x.Id);
+                    table.PrimaryKey("PK_LoadStops", x => new { x.LoadId, x.Id });
                     table.ForeignKey(
-                        name: "FK_LoadLocations_Loads_LoadId",
+                        name: "FK_LoadStops_Loads_LoadId",
                         column: x => x.LoadId,
                         principalTable: "Loads",
-                        principalColumn: "Id");
+                        principalColumn: "Id",
+                        onDelete: ReferentialAction.Cascade);
+                });
+
+            migrationBuilder.CreateTable(
+                name: "Bids",
+                columns: table => new
+                {
+                    Id = table.Column<Guid>(type: "uuid", nullable: false),
+                    AuctionLotId = table.Column<Guid>(type: "uuid", nullable: false),
+                    DriverCreatedId = table.Column<Guid>(type: "uuid", nullable: false),
+                    Rate = table.Column<decimal>(type: "numeric", nullable: false),
+                    CreatedAt = table.Column<DateTime>(type: "timestamp with time zone", nullable: false),
+                    Note = table.Column<string>(type: "character varying(500)", maxLength: 500, nullable: true)
+                },
+                constraints: table =>
+                {
+                    table.PrimaryKey("PK_Bids", x => x.Id);
+                    table.ForeignKey(
+                        name: "FK_Bids_AuctionLots_AuctionLotId",
+                        column: x => x.AuctionLotId,
+                        principalTable: "AuctionLots",
+                        principalColumn: "Id",
+                        onDelete: ReferentialAction.Cascade);
+                    table.ForeignKey(
+                        name: "FK_Bids_Drivers_DriverCreatedId",
+                        column: x => x.DriverCreatedId,
+                        principalTable: "Drivers",
+                        principalColumn: "Id",
+                        onDelete: ReferentialAction.Cascade);
                 });
 
             migrationBuilder.CreateIndex(
-                name: "IX_Drivers_UserId",
-                table: "Drivers",
+                name: "IX_Admins_UserId",
+                table: "Admins",
                 column: "UserId",
                 unique: true);
 
@@ -303,15 +421,41 @@ namespace Data.Migrations
                 unique: true);
 
             migrationBuilder.CreateIndex(
+                name: "IX_AuctionLots_DispatcherCreatedId",
+                table: "AuctionLots",
+                column: "DispatcherCreatedId");
+
+            migrationBuilder.CreateIndex(
+                name: "IX_AuctionLots_LoadId",
+                table: "AuctionLots",
+                column: "LoadId");
+
+            migrationBuilder.CreateIndex(
+                name: "IX_Bids_AuctionLotId",
+                table: "Bids",
+                column: "AuctionLotId");
+
+            migrationBuilder.CreateIndex(
+                name: "IX_Bids_DriverCreatedId",
+                table: "Bids",
+                column: "DriverCreatedId");
+
+            migrationBuilder.CreateIndex(
                 name: "IX_Dispatchers_UserId",
                 table: "Dispatchers",
                 column: "UserId",
                 unique: true);
 
             migrationBuilder.CreateIndex(
-                name: "IX_LoadLocations_LoadId",
-                table: "LoadLocations",
-                column: "LoadId");
+                name: "IX_DriverLocations_DriverId",
+                table: "DriverLocations",
+                column: "DriverId");
+
+            migrationBuilder.CreateIndex(
+                name: "IX_Drivers_UserId",
+                table: "Drivers",
+                column: "UserId",
+                unique: true);
 
             migrationBuilder.CreateIndex(
                 name: "IX_Loads_DispatcherId",
@@ -323,21 +467,18 @@ namespace Data.Migrations
                 table: "Loads",
                 column: "DriverId");
 
-            migrationBuilder.AddForeignKey(
-                name: "FK_Drivers_AspNetUsers_UserId",
-                table: "Drivers",
-                column: "UserId",
-                principalTable: "AspNetUsers",
-                principalColumn: "Id",
-                onDelete: ReferentialAction.Cascade);
+            migrationBuilder.CreateIndex(
+                name: "IX_Vehicles_DriverId",
+                table: "Vehicles",
+                column: "DriverId",
+                unique: true);
         }
 
         /// <inheritdoc />
         protected override void Down(MigrationBuilder migrationBuilder)
         {
-            migrationBuilder.DropForeignKey(
-                name: "FK_Drivers_AspNetUsers_UserId",
-                table: "Drivers");
+            migrationBuilder.DropTable(
+                name: "Admins");
 
             migrationBuilder.DropTable(
                 name: "AspNetRoleClaims");
@@ -355,10 +496,22 @@ namespace Data.Migrations
                 name: "AspNetUserTokens");
 
             migrationBuilder.DropTable(
-                name: "LoadLocations");
+                name: "Bids");
+
+            migrationBuilder.DropTable(
+                name: "DriverLocations");
+
+            migrationBuilder.DropTable(
+                name: "LoadStops");
+
+            migrationBuilder.DropTable(
+                name: "Vehicles");
 
             migrationBuilder.DropTable(
                 name: "AspNetRoles");
+
+            migrationBuilder.DropTable(
+                name: "AuctionLots");
 
             migrationBuilder.DropTable(
                 name: "Loads");
@@ -367,54 +520,10 @@ namespace Data.Migrations
                 name: "Dispatchers");
 
             migrationBuilder.DropTable(
+                name: "Drivers");
+
+            migrationBuilder.DropTable(
                 name: "AspNetUsers");
-
-            migrationBuilder.DropIndex(
-                name: "IX_Drivers_UserId",
-                table: "Drivers");
-
-            migrationBuilder.DropColumn(
-                name: "UserId",
-                table: "Drivers");
-
-            migrationBuilder.AddColumn<string>(
-                name: "Email",
-                table: "Drivers",
-                type: "character varying(254)",
-                maxLength: 254,
-                nullable: false,
-                defaultValue: "");
-
-            migrationBuilder.AddColumn<string>(
-                name: "FirstName",
-                table: "Drivers",
-                type: "character varying(50)",
-                maxLength: 50,
-                nullable: false,
-                defaultValue: "");
-
-            migrationBuilder.AddColumn<string>(
-                name: "LastName",
-                table: "Drivers",
-                type: "character varying(50)",
-                maxLength: 50,
-                nullable: false,
-                defaultValue: "");
-
-            migrationBuilder.AddColumn<string>(
-                name: "Phone",
-                table: "Drivers",
-                type: "character varying(15)",
-                maxLength: 15,
-                nullable: false,
-                defaultValue: "");
-
-            migrationBuilder.AddColumn<DateTime>(
-                name: "RegistrationDate",
-                table: "Drivers",
-                type: "timestamp with time zone",
-                nullable: false,
-                defaultValue: new DateTime(1, 1, 1, 0, 0, 0, 0, DateTimeKind.Unspecified));
         }
     }
 }

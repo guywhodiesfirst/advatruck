@@ -1,6 +1,7 @@
 ﻿services:
   tms-db:
     image: postgres:16
+    container_name: tms-postgres
     restart: unless-stopped
     environment:
       POSTGRES_USER: postgres
@@ -8,21 +9,84 @@
       POSTGRES_DB: tms_db
     ports:
       - "5432:5432"
-  
+    volumes:
+      - tms_postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres -d tms_db"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
   tms-redis:
     image: redis:7
+    container_name: tms-redis
+    restart: unless-stopped
     ports:
       - "6379:6379"
-  
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
   tms-rabbitmq:
     image: rabbitmq:3-management
-    container_name: rabbitmq
+    container_name: tms-rabbitmq
+    restart: unless-stopped
     ports:
       - "5672:5672"
       - "15672:15672"
     environment:
       RABBITMQ_DEFAULT_USER: admin
       RABBITMQ_DEFAULT_PASS: admin
+    healthcheck:
+      test: ["CMD", "rabbitmq-diagnostics", "ping"]
+      interval: 10s
+      timeout: 10s
+      retries: 10
+
+  tms-api:
+    image: tms-api:latest
+    container_name: tms-api
+    restart: unless-stopped
+    build:
+      context: .
+      dockerfile: API/Dockerfile
+    ports:
+      - "5112:8080"
+    environment:
+      - ASPNETCORE_ENVIRONMENT=Development
+      - App__PostgresConnectionString=Host=tms-db;Port=5432;Database=tms_db;Username=postgres;Password=postgres
+      - App__RedisConnectionString=tms-redis:6379
+      - RabbitMq__HostName=tms-rabbitmq
+      - RabbitMq__UserName=admin
+      - RabbitMq__Password=admin
+      - RabbitMq__Port=5672
+      - Jwt__Key=${JWT_SECRET_KEY}
+      - Cors__AllowedOrigins__0=http://tms-client/
+      - Cors__AllowedOrigins__1=http://localhost:3000/
+    depends_on:
+      tms-db:
+        condition: service_healthy
+      tms-redis:
+        condition: service_healthy
+      tms-rabbitmq:
+        condition: service_healthy
+  
+  tms-client:
+    image: tms-client:latest
+    container_name: tms-client
+    restart: unless-stopped
+    build:
+      context: .
+      dockerfile: Client/Dockerfile
+    ports:
+      - "3000:80"
+    depends_on:
+      - tms-api
+
+volumes:
+  tms_postgres_data:
   ### Uncomment when tms-bot is ready to be exposed to the internet for testing with ngrok
   # ngrok:
   #   image: ngrok/ngrok:latest

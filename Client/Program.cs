@@ -31,6 +31,9 @@ builder.Services.AddScoped<AuthenticationStateProvider>(sp =>
 
 builder.Services.AddScoped<JwtAuthorizationHandler>();
 
+// Do not set ApiUrl in appsettings.json if running from docker container
+var apiUrl = builder.Configuration["ApiUrl"] ?? "http://localhost:3000";
+
 builder.Services.AddScoped(sp =>
 {
     var handler = sp.GetRequiredService<JwtAuthorizationHandler>();
@@ -38,7 +41,7 @@ builder.Services.AddScoped(sp =>
 
     return new HttpClient(handler)
     {
-        BaseAddress = new Uri("http://localhost:5112/"),
+        BaseAddress = new Uri(apiUrl),
     };
 });
 

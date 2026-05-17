@@ -2,6 +2,7 @@ namespace API.Extensions;
 
 using System.Text;
 using System.Text.Json.Serialization;
+using API.Options;
 using API.Workers;
 using Asp.Versioning;
 using Business.Interfaces;
@@ -61,12 +62,12 @@ public static class DependencyInjectionExtensions
             .Validate(o => o.Port > 0, $"{nameof(RabbitMqOptions.Port)} must be greater than 0")
             .ValidateOnStart();
 
-        services.AddOptions<AppOptions>()
-            .Bind(configuration.GetSection(AppOptions.ConfigName))
+        services.AddOptions<ApiOptions>()
+            .Bind(configuration.GetSection(ApiOptions.ConfigName))
             .ValidateOnStart();
 
         var rabbitOptions = configuration.GetSection(RabbitMqOptions.ConfigurationSection).Get<RabbitMqOptions>();
-        var appOptions = configuration.GetSection(AppOptions.ConfigName).Get<AppOptions>();
+        var appOptions = configuration.GetSection(ApiOptions.ConfigName).Get<ApiOptions>();
 
         services.AddSingleton<IConnection>(_ => new ConnectionFactory
         {
@@ -138,11 +139,18 @@ public static class DependencyInjectionExtensions
                 };
             });
 
+        var allowedOrigins = configuration.GetSection("Cors:AllowedOrigins").Get<string[]>() ??
+                             ["http://localhost:3000"];
+
         services.AddCors(options =>
         {
             options.AddPolicy("ClientPolicy", policy =>
             {
-                policy.AllowAnyOrigin().AllowAnyHeader().AllowAnyMethod();
+                policy
+                    .WithOrigins(allowedOrigins)
+                    .AllowAnyHeader()
+                    .AllowAnyMethod()
+                    .AllowCredentials();
             });
         });
 
@@ -162,7 +170,6 @@ public static class DependencyInjectionExtensions
 
         services.AddScoped<ITokenService, TokenService>();
         services.AddScoped<IDriverService, DriverService>();
-        services.AddScoped<IGeocodingService, NominatimService>();
         services.AddScoped<IDriverActivityService, DriverActivityService>();
         services.AddScoped<IDriverLocationService, DriverLocationService>();
         services.AddScoped<IVehicleService, VehicleService>();
