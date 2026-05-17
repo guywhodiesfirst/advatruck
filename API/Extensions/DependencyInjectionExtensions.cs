@@ -55,7 +55,7 @@ public static class DependencyInjectionExtensions
     public static IServiceCollection AddInfrastructureServices(this IServiceCollection services, IConfiguration configuration)
     {
         services.AddOptions<RabbitMqOptions>()
-            .Bind(configuration.GetSection(RabbitMqOptions.ConfigName))
+            .Bind(configuration.GetSection(RabbitMqOptions.ConfigurationSection))
             .Validate(o => !string.IsNullOrWhiteSpace(o.HostName), $"{nameof(RabbitMqOptions.HostName)} is required")
             .Validate(o => !string.IsNullOrWhiteSpace(o.UserName), $"{nameof(RabbitMqOptions.UserName)} is required")
             .Validate(o => !string.IsNullOrWhiteSpace(o.Password), $"{nameof(RabbitMqOptions.Password)} is required")
@@ -66,7 +66,7 @@ public static class DependencyInjectionExtensions
             .Bind(configuration.GetSection(AppOptions.ConfigName))
             .ValidateOnStart();
 
-        var rabbitOptions = configuration.GetSection(RabbitMqOptions.ConfigName).Get<RabbitMqOptions>();
+        var rabbitOptions = configuration.GetSection(RabbitMqOptions.ConfigurationSection).Get<RabbitMqOptions>();
         var appOptions = configuration.GetSection(AppOptions.ConfigName).Get<AppOptions>();
 
         services.AddSingleton<IConnection>(_ => new ConnectionFactory
