@@ -106,11 +106,11 @@ public static class ApiRoutes
     {
         public static string GetAll => $"api/{Version}/vehicles";
 
-        public static string GetById(Guid id) => $"api/{Version}/vehicles/{id}";
-
         public static string Create => $"api/{Version}/vehicles";
 
-        public static string Update => $"api/{Version}/vehicles";
+        public static string GetById(Guid id) => $"api/{Version}/vehicles/{id}";
+
+        public static string Update(Guid id) => $"api/{Version}/vehicles/{id}";
 
         public static string Delete(Guid id) => $"api/{Version}/vehicles/{id}";
     }

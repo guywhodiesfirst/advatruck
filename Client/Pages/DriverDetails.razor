@@ -6,7 +6,6 @@
 @using Microsoft.AspNetCore.Components.Authorization
 @attribute [Authorize(Roles = "Admin, Dispatcher")]
 @inject DriverApiService DriverService
-@inject VehicleApiService VehicleService
 @inject ISnackbar Snackbar
 @inject NavigationManager NavManager
 @inject IDialogService DialogService
@@ -215,7 +214,6 @@
         
         var dto = new VehicleCreateUpdateDto 
         { 
-            Id = _profile.Vehicle.Id,
             Model = _profile.Vehicle.Model,
             PlateNumber = _profile.Vehicle.PlateNumber,
             MaxWeight = _profile.Vehicle.MaxWeight,
@@ -225,7 +223,7 @@
             DriverId = _profile.Id
         };
 
-        await ShowVehicleDialog(dto, "Update Vehicle Information");
+        await ShowVehicleDialog(_profile.Vehicle.Id, dto, "Update Vehicle Information");
     }
 
     private async Task OpenAssignVehicleDialog()
@@ -237,22 +235,25 @@
             DriverId = Id 
         };
 
-        await ShowVehicleDialog(dto, "Assign New Vehicle");
+        await ShowVehicleDialog(null, dto, "Assign New Vehicle");
     }
 
-    private async Task ShowVehicleDialog(VehicleCreateUpdateDto dto, string title)
+    private async Task ShowVehicleDialog(Guid? vehicleId, VehicleCreateUpdateDto dto, string title)
     {
         var parameters = new DialogParameters<VehicleDialog>();
+        
+        parameters.Add(x => x.VehicleId, vehicleId);
         parameters.Add(x => x.Vehicle, dto);
+        
         var options = new DialogOptions { CloseButton = true, MaxWidth = MaxWidth.Small, FullWidth = true };
         
         var dialog = await DialogService.ShowAsync<VehicleDialog>(title, parameters, options);
         var result = await dialog.Result;
 
-        if (!result!.Canceled)
+        if (result != null && !result.Canceled)
         {
             await LoadProfile();
-            Snackbar.Add(dto.Id == null ? "Vehicle assigned" : "Vehicle updated", Severity.Success);
+            Snackbar.Add(vehicleId == null ? "Vehicle assigned" : "Vehicle updated", Severity.Success);
         }
     }
 }

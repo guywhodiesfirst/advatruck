@@ -33,10 +33,11 @@ public interface IVehicleService
     /// <summary>
     /// Update vehicle information.
     /// </summary>
+    /// <param name="id">Vehicle ID.</param>
     /// <param name="vehicleDto">Vehicle with updated data.</param>
     /// <param name="cancellationToken">Cancellation token.</param>
     /// <returns>Updated vehicle.</returns>
-    Task<VehicleDto> UpdateAsync(VehicleCreateUpdateDto vehicleDto, CancellationToken cancellationToken = default);
+    Task<VehicleDto> UpdateAsync(Guid id, VehicleCreateUpdateDto vehicleDto, CancellationToken cancellationToken = default);
 
     /// <summary>
     /// Delete vehicle by ID.

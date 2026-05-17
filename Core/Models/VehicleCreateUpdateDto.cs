@@ -4,8 +4,6 @@ using System.ComponentModel.DataAnnotations;
 
 public class VehicleCreateUpdateDto
 {
-    public Guid? Id { get; set; }
-
     [Required]
     [StringLength(255)]
     public required string Model { get; set; }

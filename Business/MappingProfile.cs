@@ -10,9 +10,7 @@ public class MappingProfile : Profile
 {
     public MappingProfile()
     {
-        CreateMap<VehicleCreateUpdateDto, Vehicle>()
-            .ForMember(dest => dest.Id, opt => opt.Condition(src => src.Id.HasValue))
-            .ForMember(dest => dest.Id, opt => opt.MapFrom(src => src.Id ?? Guid.Empty));
+        CreateMap<VehicleCreateUpdateDto, Vehicle>();
 
         CreateMap<Vehicle, VehicleCreateUpdateDto>();
 

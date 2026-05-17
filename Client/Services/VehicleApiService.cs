@@ -30,9 +30,9 @@ public class VehicleApiService(HttpClient httpClient)
         return await response.Content.ReadFromJsonAsync<Guid>(cancellationToken: cancellationToken);
     }
 
-    public async Task<VehicleDto> UpdateAsync(VehicleCreateUpdateDto dto, CancellationToken cancellationToken = default)
+    public async Task<VehicleDto> UpdateAsync(Guid id, VehicleCreateUpdateDto dto, CancellationToken cancellationToken = default)
     {
-        var response = await httpClient.PutAsJsonAsync(ApiRoutes.Vehicles.Update, dto, cancellationToken);
+        var response = await httpClient.PutAsJsonAsync(ApiRoutes.Vehicles.Update(id), dto, cancellationToken);
         response.EnsureSuccessStatusCode();
 
         var result = await response.Content.ReadFromJsonAsync<VehicleDto>(cancellationToken: cancellationToken);
