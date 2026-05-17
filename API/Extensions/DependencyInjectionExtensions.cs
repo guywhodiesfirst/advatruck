@@ -21,7 +21,6 @@ using StackExchange.Redis;
 
 public static class DependencyInjectionExtensions
 {
-    // 1. Веб-інтерфейс, серіалізація та версіонування API
     public static IServiceCollection AddPresentationApi(this IServiceCollection services)
     {
         services.AddControllers()
@@ -173,6 +172,7 @@ public static class DependencyInjectionExtensions
         services.AddScoped<IAuctionLotService, AuctionLotService>();
         services.AddScoped<IBidService, BidService>();
         services.AddScoped<IAdminService, AdminService>();
+        services.AddScoped<IAuthService, AuthService>();
 
         services.AddSingleton<IDriverSessionStore, DriverSessionStore>();
         services.AddMemoryCache();
