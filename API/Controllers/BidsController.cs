@@ -7,7 +7,7 @@ using Core.Models;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 
-// TODO: in client, driver location is always marked as unknown; in business layer, update logic does not work as expected - it's better to unify the create and update methods
+// TODO: in business layer, update logic does not work as expected - it's better to unify the create and update methods
 [ApiController]
 [Route("api/v{v:apiVersion}/bids")]
 [ApiVersion(TmsApiVersion.V1)]

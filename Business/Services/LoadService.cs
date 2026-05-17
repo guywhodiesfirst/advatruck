@@ -41,6 +41,7 @@ public class LoadService(
             load.Id = Guid.NewGuid();
             load.CreatedAt = DateTime.UtcNow;
 
+            ValidateLoadStopOrder(load.LoadStops);
             UpdateLoadStatus(load);
             HandleClosedAt(load);
 
@@ -81,7 +82,7 @@ public class LoadService(
         var oldStatus = existingLoad.LoadStatus;
 
         mapper.Map(dto, existingLoad);
-
+        ValidateLoadStopOrder(existingLoad.LoadStops);
         UpdateLoadStatus(existingLoad);
         HandleClosedAt(existingLoad);
 
@@ -217,6 +218,36 @@ public class LoadService(
         else
         {
             load.ClosedAt = null;
+        }
+    }
+
+    private static void ValidateLoadStopOrder(IEnumerable<LoadStop> stops)
+    {
+        var ordered = stops.OrderBy(s => s.Timestamp).ToList();
+
+        if (ordered.Count == 0)
+        {
+            return;
+        }
+
+        if (ordered.First().LoadLocationType != LoadLocationType.Pickup)
+        {
+            throw new TmsException("First stop must be a Pickup", HttpStatusCode.BadRequest);
+        }
+
+        if (ordered.Last().LoadLocationType != LoadLocationType.Delivery)
+        {
+            throw new TmsException("Last stop must be a Delivery", HttpStatusCode.BadRequest);
+        }
+
+        for (var i = 1; i < ordered.Count; i++)
+        {
+            if (ordered[i].Timestamp <= ordered[i - 1].Timestamp)
+            {
+                throw new TmsException(
+                    $"Load stop #{i + 1} must be scheduled after stop #{i}",
+                    HttpStatusCode.BadRequest);
+            }
         }
     }
 }
