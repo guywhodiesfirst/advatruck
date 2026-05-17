@@ -48,6 +48,7 @@ public class DriverRepository(TmsDataContext context) : IDriverRepository
             .Include(d => d.DriverLocations
                 .OrderByDescending(dl => dl.UpdateTime))
             .Include(d => d.User)
+            .Include(d => d.Vehicle)
             .Include(d => d.Loads)
             .FirstOrDefaultAsync(d => d.User.Email == email, cancellationToken);
     }

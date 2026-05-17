@@ -78,7 +78,7 @@ public static class ApiRoutes
 
         public static string GetById(Guid id) => $"api/{Version}/drivers/{id}";
 
-        public static string Update => $"api/{Version}/drivers";
+        public static string Update(Guid id) => $"api/{Version}/drivers/{id}";
 
         public static string GetActiveLoad(Guid id) => $"api/{Version}/drivers/{id}/active-load";
 

@@ -13,9 +13,8 @@ public class AuctionLotRepository(TmsDataContext context) : IAuctionLotRepositor
         => await context.AuctionLots
             .Where(e => e.Status == AuctionStatus.Active && e.EndsAt > DateTime.UtcNow)
             .Include(e => e.DispatcherCreated).ThenInclude(d => d.User)
-            .Include(e => e.Bids)
-            .ThenInclude(b => b.DriverCreated)
-            .ThenInclude(d => d.User)
+            .Include(e => e.Bids).ThenInclude(b => b.DriverCreated).ThenInclude(d => d.User)
+            .Include(e => e.Bids).ThenInclude(b => b.DriverCreated).ThenInclude(d => d.DriverLocations)
             .ToListAsync(cancellationToken);
 
     /// <inheritdoc />
@@ -23,17 +22,16 @@ public class AuctionLotRepository(TmsDataContext context) : IAuctionLotRepositor
         => await context.AuctionLots
             .Include(e => e.DispatcherCreated).ThenInclude(d => d.User)
             .Include(e => e.Load)
-            .Include(e => e.Bids)
-            .ThenInclude(b => b.DriverCreated).ThenInclude(d => d.User)
+            .Include(e => e.Bids).ThenInclude(b => b.DriverCreated).ThenInclude(d => d.User)
+            .Include(e => e.Bids).ThenInclude(b => b.DriverCreated).ThenInclude(d => d.DriverLocations)
             .FirstOrDefaultAsync(e => e.Id == auctionLotId, cancellationToken);
 
     /// <inheritdoc/>
     public async Task<IEnumerable<AuctionLot>> GetAllAsync(CancellationToken cancellationToken = default)
         => await context.AuctionLots
             .Include(e => e.DispatcherCreated).ThenInclude(d => d.User)
-            .Include(e => e.Bids)
-            .ThenInclude(b => b.DriverCreated)
-            .ThenInclude(d => d.User)
+            .Include(e => e.Bids).ThenInclude(b => b.DriverCreated).ThenInclude(d => d.User)
+            .Include(e => e.Bids).ThenInclude(b => b.DriverCreated).ThenInclude(d => d.DriverLocations)
             .ToListAsync(cancellationToken);
 
     /// <inheritdoc />
