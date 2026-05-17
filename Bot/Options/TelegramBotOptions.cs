@@ -1,6 +1,6 @@
 #nullable disable
 
-namespace Bot;
+namespace Bot.Options;
 
 public class TelegramBotOptions
 {
