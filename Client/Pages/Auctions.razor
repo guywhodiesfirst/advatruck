@@ -83,13 +83,9 @@
                             <CardHeaderContent>
                                 <div class="d-flex justify-space-between align-start">
                                     <div class="d-flex flex-column">
-                                        <MudLink href="@($"/loads/{lot.LoadId}")" 
-                                                 Underline="Underline.Hover" 
-                                                 Color="Color.Primary" 
-                                                 Typo="Typo.h6" 
-                                                 Style="font-weight: bold;">
+                                        <MudText Typo="Typo.h6" Style="font-weight: bold;">
                                             Lot #@lot.Id.ToString().Substring(0, 8)
-                                        </MudLink>
+                                        </MudText>
                                         <MudText Typo="Typo.caption" Style="opacity: 0.6;">Dispatcher: @lot.DispatcherName</MudText>
                                     </div>
                                     <MudChip T="string" 
@@ -227,7 +223,6 @@
         var parameters = new DialogParameters<BidDialog> 
         { 
             { x => x.AuctionLotId, lot.Id },
-            { x => x.ExistingBid, myExistingBid }
         };
 
         var options = new DialogOptions { CloseButton = true, MaxWidth = MaxWidth.Small, FullWidth = true };

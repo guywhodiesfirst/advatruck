@@ -7,7 +7,6 @@ using Core.Models;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 
-// TODO: in business layer, update logic does not work as expected - it's better to unify the create and update methods
 [ApiController]
 [Route("api/v{v:apiVersion}/bids")]
 [ApiVersion(TmsApiVersion.V1)]
@@ -30,7 +29,7 @@ public class BidsController(IBidService service) : ControllerBase
 
     [Authorize(Roles = "Driver")]
     [HttpPost]
-    public async Task<ActionResult<Guid>> Create([FromBody] BidCreateUpdateDto dto, CancellationToken cancellationToken)
+    public async Task<ActionResult<Guid>> PlaceBid([FromBody] BidCreateUpdateDto dto, CancellationToken cancellationToken)
     {
         var driverId = User.GetDriverId();
 
@@ -39,24 +38,9 @@ public class BidsController(IBidService service) : ControllerBase
             return Unauthorized();
         }
 
-        dto.DriverCreatedId = driverId;
-        var id = await service.CreateAsync(dto, cancellationToken);
-        return CreatedAtAction(nameof(GetById), new { v = "1", id }, id);
-    }
+        var bidId = await service.UpsertAsync(driverId, dto, cancellationToken);
 
-    [Authorize(Roles = "Driver")]
-    [HttpPut("{id:guid}")]
-    public async Task<ActionResult<BidDto>> Update(Guid id, [FromBody] BidCreateUpdateDto dto, CancellationToken cancellationToken)
-    {
-        var currentDriverId = User.GetDriverId();
-
-        if (currentDriverId == Guid.Empty)
-        {
-            return Unauthorized();
-        }
-
-        var result = await service.UpdateAsync(id, currentDriverId, dto, cancellationToken);
-        return Ok(result);
+        return Ok(bidId);
     }
 
     [Authorize(Roles = "Driver,Admin")]

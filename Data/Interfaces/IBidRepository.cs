@@ -45,4 +45,13 @@ public interface IBidRepository
     /// <param name="cancellationToken">Cancellation token.</param>
     /// <returns>Task representing async operation.</returns>
     Task DeleteAsync(Bid bid, CancellationToken cancellationToken = default);
+
+    /// <summary>
+    /// Retrieves bid by driver ID and auction ID.
+    /// </summary>
+    /// <param name="driverId">Driver ID.</param>
+    /// <param name="auctionLotId">Auction lot ID.</param>
+    /// <param name="cancellationToken">Cancellation token.</param>
+    /// <returns>Bid.</returns>
+    Task<Bid?> GetByDriverAndLotAsync(Guid driverId, Guid auctionLotId, CancellationToken cancellationToken = default);
 }

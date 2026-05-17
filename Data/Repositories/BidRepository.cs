@@ -47,4 +47,12 @@ public class BidRepository(TmsDataContext context) : IBidRepository
         context.Bids.Remove(bid);
         await context.SaveChangesAsync(cancellationToken);
     }
+
+    /// <inheritdoc/>
+    public async Task<Bid?> GetByDriverAndLotAsync(Guid driverId, Guid auctionLotId, CancellationToken cancellationToken = default)
+    {
+        return await context.Bids
+            .Include(b => b.AuctionLot)
+            .FirstOrDefaultAsync(b => b.DriverCreatedId == driverId && b.AuctionLotId == auctionLotId, cancellationToken);
+    }
 }
