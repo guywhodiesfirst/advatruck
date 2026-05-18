@@ -27,7 +27,6 @@
         </div>
 
         <MudGrid>
-            @* Left Column: Auction Info *@
             <MudItem xs="12" md="4">
                 <MudCard Elevation="2" Class="mb-4">
                     <MudCardHeader>
@@ -65,7 +64,6 @@
                 </MudCard>
             </MudItem>
 
-            @* Right Column: Bids Table with Location Info *@
             <MudItem xs="12" md="8">
                 <MudTable Items="_lot.Bids" Hover="true" Elevation="2" Dense="true" FixedHeader="true" Height="450px">
                     <ToolBarContent>
@@ -73,6 +71,7 @@
                     </ToolBarContent>
                     <HeaderContent>
                         <MudTh>Driver & Location</MudTh>
+                        <MudTh>Distance to Pickup</MudTh>
                         <MudTh>Rate</MudTh>
                         <MudTh>Bid Timestamp</MudTh>
                         <MudTh>Location Updated</MudTh>
@@ -100,6 +99,18 @@
                                     <MudText Typo="Typo.caption" Class="mud-text-secondary">Location unknown</MudText>
                                 }
                             </div>
+                        </MudTd>
+                        <MudTd DataLabel="Distance to Pickup">
+                            @if (context.DistanceToPickup > 0)
+                            {
+                                <MudChip T="string" Size="Size.Small" Icon="@Icons.Material.Filled.Navigation" Color="Color.Info" Variant="Variant.Outlined">
+                                    @context.DistanceToPickup km
+                                </MudChip>
+                            }
+                            else
+                            {
+                                <MudText Typo="Typo.caption" Class="mud-text-secondary">—</MudText>
+                            }
                         </MudTd>
                         <MudTd DataLabel="Rate">
                             <MudText Color="Color.Success" Typo="Typo.body1"><b>₴@context.Rate</b></MudText>

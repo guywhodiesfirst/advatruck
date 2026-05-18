@@ -2,7 +2,7 @@ namespace Core.Models;
 
 using System.Text.Json.Serialization;
 
-public class NominatimResponse
+public class NominatimAddressResponse
 {
     [JsonPropertyName("display_name")]
     public string DisplayName { get; set; } = string.Empty;

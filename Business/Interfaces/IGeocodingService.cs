@@ -14,4 +14,12 @@ public interface IGeocodingService
     /// <param name="cancellationToken">Cancellation token.</param>
     /// <returns>Address.</returns>
     Task<string> GetAddressAsync(GeoPoint location, CancellationToken cancellationToken = default);
+
+    /// <summary>
+    /// Retrieves coordinates for specified address.
+    /// </summary>
+    /// <param name="address">Address.</param>
+    /// <param name="cancellationToken">Cancellation token.</param>
+    /// <returns>Coordinates.</returns>
+    Task<GeoPoint?> GetLocationAsync(string address, CancellationToken cancellationToken = default);
 }

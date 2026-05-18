@@ -14,6 +14,9 @@ public class BidRepository(TmsDataContext context) : IBidRepository
                 .ThenInclude(d => d.User)
             .Include(b => b.DriverCreated)
                 .ThenInclude(d => d.DriverLocations)
+            .Include(b => b.AuctionLot)
+                .ThenInclude(al => al.Load)
+                    .ThenInclude(l => l.LoadStops)
             .FirstOrDefaultAsync(e => e.Id == bidId, cancellationToken);
 
     /// <inheritdoc />
@@ -23,6 +26,9 @@ public class BidRepository(TmsDataContext context) : IBidRepository
                 .ThenInclude(d => d.User)
             .Include(b => b.DriverCreated)
                 .ThenInclude(d => d.DriverLocations)
+            .Include(b => b.AuctionLot)
+                .ThenInclude(al => al.Load)
+                    .ThenInclude(l => l.LoadStops)
             .ToListAsync(cancellationToken);
 
     /// <inheritdoc />

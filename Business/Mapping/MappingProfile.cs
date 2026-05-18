@@ -1,4 +1,4 @@
-namespace Business;
+namespace Business.Mapping;
 
 using AutoMapper;
 using Core.Entities;
@@ -30,6 +30,7 @@ public class MappingProfile : Profile
             .ForMember(
                 dest => dest.DispatcherName,
                 opt => opt.MapFrom(src => $"{src.Dispatcher.User.FirstName} {src.Dispatcher.User.LastName}"))
+            .ForMember(dest => dest.TotalDistance, opt => opt.MapFrom<TotalDistanceResolver>())
             .ForMember(
                 dest => dest.DriverName,
                 opt => opt.MapFrom(src => $"{src.Driver.User.FirstName} {src.Driver.User.LastName}"));
@@ -119,7 +120,10 @@ public class MappingProfile : Profile
                 dest => dest.LastLocationUpdate,
                 opt => opt.MapFrom(src => src.DriverCreated.DriverLocations.Any()
                     ? src.DriverCreated.DriverLocations.OrderByDescending(l => l.UpdateTime).FirstOrDefault()!.UpdateTime
-                    : (DateTime?)null));
+                    : (DateTime?)null))
+            .ForMember(
+                dest => dest.DistanceToPickup,
+                opt => opt.MapFrom<DistanceToPickupResolver>());
 
         CreateMap<BidCreateUpdateDto, Bid>()
             .ForMember(dest => dest.CreatedAt, opt => opt.MapFrom(_ => DateTime.UtcNow))

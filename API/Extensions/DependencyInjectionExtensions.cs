@@ -181,6 +181,7 @@ public static class DependencyInjectionExtensions
         services.AddScoped<IAdminService, AdminService>();
         services.AddScoped<IAuthService, AuthService>();
         services.AddScoped<IUserService, UserService>();
+        services.AddScoped<IDistanceService, DistanceService>();
 
         services.AddSingleton<IDriverSessionStore, DriverSessionStore>();
         services.AddMemoryCache();
