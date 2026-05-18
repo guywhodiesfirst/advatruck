@@ -34,5 +34,7 @@ public class LoadDto
 
     public int CargoHeight { get; set; }
 
+    public double TotalDistance { get; set; }
+
     public ICollection<LoadStopDto> LoadStops { get; set; } = new List<LoadStopDto>();
 }

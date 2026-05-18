@@ -14,6 +14,8 @@ public class BidDto
 
     public string? Note { get; set; }
 
+    public double DistanceToPickup { get; set; }
+
     public string? LastLocationAddress { get; set; }
 
     public DateTime? LastLocationUpdate { get; set; }

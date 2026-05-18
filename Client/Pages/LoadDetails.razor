@@ -34,7 +34,6 @@
     else
     {
         <MudGrid>
-            @* Left Column: Route Timeline *@
             <MudItem xs="12" md="8">
                 <MudCard Elevation="2" Class="mb-4">
                     <MudCardHeader>
@@ -47,7 +46,6 @@
                             @foreach (var stop in _load.LoadStops.OrderBy(s => s.Timestamp))
                             {
                                 <MudTimelineItem Color="@(stop.LoadLocationType == Core.Enums.LoadLocationType.Pickup ? Color.Primary : Color.Secondary)">
-                                    @* Інтеграція Google Maps для кожної адреси маршруту *@
                                     <div class="d-flex align-center">
                                         <MudIcon Icon="@Icons.Material.Filled.LocationOn" 
                                                  Size="Size.Small" 
@@ -78,7 +76,6 @@
                 </MudCard>
             </MudItem>
 
-            @* Right Column: Cargo Specs & Personnel *@
             <MudItem xs="12" md="4">
                 <MudCard Elevation="2" Class="mb-4">
                     <MudCardHeader>
@@ -93,6 +90,9 @@
                             </MudListItem>
                             <MudListItem Icon="@Icons.Material.Filled.SquareFoot">
                                 <b>Dimensions:</b> @($"{_load.CargoLength} x {_load.CargoWidth} x {_load.CargoHeight}") cm
+                            </MudListItem>
+                            <MudListItem Icon="@Icons.Material.Filled.Route">
+                                <b>Total Distance:</b> @_load.TotalDistance km
                             </MudListItem>
                             <MudListItem Icon="@Icons.Material.Filled.Payments">
                                 <b>Rate:</b> <MudText Color="Color.Success" Inline="true">₴@_load.Rate</MudText>

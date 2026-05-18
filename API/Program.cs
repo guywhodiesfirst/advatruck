@@ -1,6 +1,7 @@
 using System.IdentityModel.Tokens.Jwt;
 using API.Extensions;
 using API.Middlewares;
+using Business.Mapping;
 using Scalar.AspNetCore;
 using Serilog;
 
@@ -21,7 +22,7 @@ try
     builder.Services.AddInfrastructureServices(builder.Configuration);
     builder.Services.AddSecurityAndCors(builder.Configuration);
     builder.Services.AddBusinessServices();
-    builder.Services.AddAutoMapper(_ => { }, typeof(Business.MappingProfile));
+    builder.Services.AddAutoMapper(_ => { }, typeof(MappingProfile));
 
     var app = builder.Build();
 

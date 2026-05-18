@@ -13,6 +13,7 @@ using Data.Interfaces;
 public class LoadService(
     ILoadRepository loadRepository,
     INotificationService notificationService,
+    IGeocodingService geocodingService,
     IMapper mapper) : ILoadService
 {
     /// <inheritdoc />
@@ -42,6 +43,9 @@ public class LoadService(
             load.CreatedAt = DateTime.UtcNow;
 
             ValidateLoadStopOrder(load.LoadStops);
+
+            await PopulateStopsCoordinatesAsync(load.LoadStops, cancellationToken);
+
             UpdateLoadStatus(load);
             HandleClosedAt(load);
 
@@ -82,7 +86,9 @@ public class LoadService(
         var oldStatus = existingLoad.LoadStatus;
 
         mapper.Map(dto, existingLoad);
+
         ValidateLoadStopOrder(existingLoad.LoadStops);
+        await PopulateStopsCoordinatesAsync(existingLoad.LoadStops, cancellationToken);
         UpdateLoadStatus(existingLoad);
         HandleClosedAt(existingLoad);
 
@@ -248,6 +254,28 @@ public class LoadService(
                     $"Load stop #{i + 1} must be scheduled after stop #{i}",
                     HttpStatusCode.BadRequest);
             }
+        }
+    }
+
+    private async Task PopulateStopsCoordinatesAsync(IEnumerable<LoadStop> stops, CancellationToken cancellationToken)
+    {
+        foreach (var stop in stops)
+        {
+            if (stop.Location is not { Latitude: 0, Longitude: 0 })
+            {
+                continue;
+            }
+
+            var coordinates = await geocodingService.GetLocationAsync(stop.Address, cancellationToken);
+
+            if (coordinates == null)
+            {
+                throw new TmsException(
+                    $"Failed to resolve coordinates for address: '{stop.Address}'",
+                    HttpStatusCode.BadRequest);
+            }
+
+            stop.Location = coordinates;
         }
     }
 }
